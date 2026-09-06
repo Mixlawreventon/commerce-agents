@@ -1,0 +1,27 @@
+{
+  "users": [
+    {
+      "user_id": "demo-user",
+      "display_name": "Ola",
+      "loyalty_tier": "Returning guest",
+      "default_location": "Warszawa",
+      "preferences": {
+        "cabin": "loves the cabins with a jacuzzi on the terrace",
+        "occasion": "usually books a quiet weekend for two",
+        "nightly_rate": "comfortable around 600-700 PLN a night",
+        "party": "travels with her partner and a small dog",
+        "setting": "wants forest quiet and a lake within walking distance"
+      }
+    },
+    {
+      "user_id": "demo-user-2",
+      "display_name": "Marek",
+      "loyalty_tier": "Guest",
+      "default_location": "Plock",
+      "preferences": {
+        "budget": "value-focused, flexible on dates for a better rate",
+        "interests": "cycling, hammock afternoons, campfires with the kids"
+      }
+    }
+  ]
+}

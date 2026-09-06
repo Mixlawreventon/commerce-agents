@@ -104,8 +104,10 @@ def _lifespan(on_startup: Sequence[Callable[[], Awaitable[None]]]):
 def build_app(title: str, on_startup: Sequence[Callable[[], Awaitable[None]]] = ()) -> FastAPI:
     """A FastAPI app that answers only to loopback host names (plus ``DEMO_ALLOWED_HOSTS``,
     for a deployment that puts its own authentication in front) and to any localhost
-    origin. Rejecting other Host headers stops DNS-rebinding, which CORS does not. Logs go
-    to stderr at ``DEMO_LOG_LEVEL``: ``INFO`` is a line per model call, ``DEBUG`` adds the bodies."""
+    origin (plus the exact origins in ``DEMO_ALLOWED_ORIGINS``, for a deployment whose web
+    app is served from another host). Rejecting other Host headers stops DNS-rebinding,
+    which CORS does not. Logs go to stderr at ``DEMO_LOG_LEVEL``: ``INFO`` is a line per
+    model call, ``DEBUG`` adds the bodies."""
     logging.basicConfig(
         level=os.environ.get("DEMO_LOG_LEVEL", "INFO").upper(),
         format="%(levelname)s %(name)s: %(message)s",
@@ -116,6 +118,11 @@ def build_app(title: str, on_startup: Sequence[Callable[[], Awaitable[None]]] = 
         host.strip().rsplit(":", 1)[0] if ":" in host.strip() else host.strip()
         for host in os.environ.get("DEMO_ALLOWED_HOSTS", "").split(",")
     ]
+    extra_origins = [
+        origin.strip()
+        for origin in os.environ.get("DEMO_ALLOWED_ORIGINS", "").split(",")
+        if origin.strip()
+    ]
     app = FastAPI(title=title, version="0.1.0", lifespan=_lifespan(on_startup))
     app.add_middleware(
         TrustedHostMiddleware,
@@ -123,6 +130,7 @@ def build_app(title: str, on_startup: Sequence[Callable[[], Awaitable[None]]] = 
     )
     app.add_middleware(
         CORSMiddleware,
+        allow_origins=extra_origins,
         allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
         allow_methods=["*"],
         allow_headers=["*"],
