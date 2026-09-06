@@ -15,12 +15,14 @@ from shopping_agent_runtime import ShoppingAgent
 
 from .agent_config import build_shopping_config
 from .itinerary import build_itinerary_extension
+from .live_hygge import build_backend
 from .merchant import create_merchant_router
-from .mock_travel import DATA_DIR, MockTravel
+from .mock_travel import DATA_DIR
 
 load_demo_env(DATA_DIR.parent)
 
-backend = MockTravel()
+# Live idobooking data when IDOBOOKING_MIDDLEWARE_URL is set, else the static catalog.
+backend = build_backend()
 agent = ShoppingAgent(
     backend=backend,
     skills_dir=REPO_ROOT / "shopping-agent" / "skills",
