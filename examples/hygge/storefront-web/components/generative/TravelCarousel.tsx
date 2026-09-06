@@ -109,6 +109,8 @@ export function TravelCard({
       <PostcardWindow
         city={productPlace(product)}
         title={product.title}
+        imageUrl={product.image_url}
+        showLabel={false}
         className={horizontal ? "h-full min-h-[90px] w-full" : "aspect-[16/10] w-full"}
       />
       {soldOut ? <SoldOutBand /> : null}

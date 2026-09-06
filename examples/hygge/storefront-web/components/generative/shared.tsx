@@ -237,6 +237,8 @@ export function MiniProductCard({ product }: { product: Product }) {
       <PostcardWindow
         city={productPlace(product)}
         title={product.title}
+        imageUrl={product.image_url}
+        showLabel={false}
         className="h-[60px] w-[96px] shrink-0 overflow-hidden rounded-lg"
       />
       <div className="min-w-0">

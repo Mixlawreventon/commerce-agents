@@ -18,6 +18,15 @@ const STARTERS: Starter[] = [
 /** The keys of DESTINATION_GRADIENTS in lib/format.ts. */
 const POSTCARD_CITIES = ["Fika", "Lagom", "Gron", "Hyggelig", "Lykke"];
 
+/** Primary photo per cabin (idobooking); mirrors each cabin's image_url in data/catalog.json. */
+const POSTCARD_IMAGES: Record<string, string> = {
+  Fika: "https://client9681.idobooking.com/images/objects/pictures/large/2/1/104.jpg",
+  Lagom: "https://client9681.idobooking.com/images/objects/pictures/large/3/1/108.jpg",
+  Gron: "https://client9681.idobooking.com/images/objects/pictures/large/4/1/186.jpg",
+  Hyggelig: "https://client9681.idobooking.com/images/objects/pictures/large/5/1/166.jpg",
+  Lykke: "https://client9681.idobooking.com/images/objects/pictures/large/7/1/213.jpg",
+};
+
 /** Sends just before the 300ms mail animation ends. */
 const MAILING_MS = 260;
 
@@ -69,7 +78,7 @@ function Postcards() {
               index % 2 ? "al-postcard-rest al-postcard-rest--alt" : "al-postcard-rest"
             } ${mailingCity === city ? "al-postcard-mailing" : ""}`}
           >
-            <PostcardWindow city={city} title={city} className="aspect-[4/3] w-full" />
+            <PostcardWindow city={city} title={city} imageUrl={POSTCARD_IMAGES[city]} className="aspect-[4/3] w-full" />
           </div>
         </button>
       ))}
