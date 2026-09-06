@@ -1,0 +1,52 @@
+{
+  "policies": [
+    {
+      "policy_id": "cancellation-refundable",
+      "title": "Cancelling a refundable booking",
+      "category": "cancellations",
+      "content": "Every Osada Hygge cabin books on a refundable rate: cancel free of charge up to 48 hours before your check-in date and the deposit is returned in full to the original payment method within 5-7 business days. Cancel closer than 48 hours out and the first night is charged; a no-show is charged the first night. Dates can also be moved instead of cancelled — see 'Changes and rebooking'."
+    },
+    {
+      "policy_id": "booking-and-deposit",
+      "title": "Booking, deposit, and paying the balance",
+      "category": "payments",
+      "content": "A booking is confirmed with a deposit of the first night's rate, charged at the time of booking. The remaining balance is due 7 days before arrival, or on arrival for bookings made inside that window. Prices are per night in Polish zloty (PLN) and cover the whole cabin. A refundable local damage deposit may be pre-authorised on your card before arrival and released after check-out if the cabin is left in good order."
+    },
+    {
+      "policy_id": "changes-and-rebooking",
+      "title": "Changes and rebooking",
+      "category": "changes",
+      "content": "Moving your dates is free up to 48 hours before check-in — you pay only the difference if the new nights cost more (weekends and holidays are priced higher). Inside 48 hours, one date change per booking is allowed subject to availability and any rate difference. Switching to a different cabin is treated as a date change as long as the new cabin is available for your nights."
+    },
+    {
+      "policy_id": "checkin-checkout",
+      "title": "Check-in and check-out",
+      "category": "stay",
+      "content": "Check-in is from 16:00 and check-out is by 11:00. Self check-in with a door code is the norm; the code and directions to Osada Hygge arrive by email the day before arrival. Early check-in or late check-out can sometimes be arranged for a fee depending on the day's bookings — just ask. Quiet hours across the property are 22:00-07:00 so every cabin keeps its calm."
+    },
+    {
+      "policy_id": "whats-included",
+      "title": "What's included in every cabin",
+      "category": "stay",
+      "content": "Each cabin is booked whole and comes with a full kitchen, bed linen and towels, free Wi-Fi, underfloor heating, free parking by the cabin, and a private terrace. Fika and Lagom add a private jacuzzi on the terrace. Firewood for the fire pit and a starter set of coffee and tea are provided. Cots and high chairs are available on request at no charge."
+    },
+    {
+      "policy_id": "pets",
+      "title": "Bringing your dog",
+      "category": "pets",
+      "content": "Well-behaved dogs are welcome in every cabin at no extra charge — Osada Hygge sits inside the Gostynin-Wloclawek forest, so it's a great base for walks. Please keep dogs off the beds and jacuzzi, clean up on the grounds, and never leave a dog alone in the cabin. Let us know at booking how many dogs are coming so we can leave out bowls and a blanket."
+    },
+    {
+      "policy_id": "occupancy-and-guests",
+      "title": "Guests and occupancy",
+      "category": "stay",
+      "content": "The rate covers the cabin's stated capacity: Fika, Lagom, Gron and Hyggelig sleep up to four, and Lykke sleeps two. Occupancy above the stated number is not permitted for safety and insurance reasons. Events and parties are not allowed — Osada Hygge is a quiet forest retreat, not an event venue."
+    },
+    {
+      "policy_id": "getting-there",
+      "title": "Getting to Osada Hygge",
+      "category": "location",
+      "content": "Osada Hygge is in the Gostynin-Wloclawek Landscape Park, roughly a two-hour drive from Warsaw and under an hour from Wloclawek and Plock. There is free parking beside each cabin. The lake and forest cycling trails start at the property; bikes can be hired nearby. Exact directions and the gate code are sent by email the day before check-in."
+    }
+  ]
+}

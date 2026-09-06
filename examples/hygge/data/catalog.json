@@ -1,0 +1,117 @@
+{
+  "_comment": "availability_from and availability_to are shifted forward by whole weeks at load time, relative to dates_anchored_to (shift_availability in api/mock_hygge.py); merchant_occupancy.json shifts the same way. Author the dates as if dates_anchored_to were today. Prices are per night in PLN; the five cabins mirror Osada Hygge's real lineup (Fika, Lagom, Gron, Hyggelig, Lykke).",
+  "dates_anchored_to": "2026-09-07",
+  "store_name": "Osada Hygge",
+  "products": [
+    {
+      "product_id": "HY-FIKA",
+      "title": "Domek Fika — jacuzzi na tarasie",
+      "brand": "Osada Hygge",
+      "price": 649.0,
+      "currency": "PLN",
+      "rating": 4.9,
+      "review_count": 214,
+      "image_url": "https://client9681.idobooking.com/images/objects/pictures/large/2/1/104.jpg",
+      "category": "cabins",
+      "labels": ["Jacuzzi na tarasie", "Ulubieniec gości"],
+      "attributes": {"city": "Osada Hygge", "region": "Gostyninsko-Wloclawski Park Krajobrazowy", "room_type": "cały domek", "hot_tub": "yes", "sauna": "no", "pets_allowed": "yes", "breakfast_included": "no", "refundable": "yes", "typical_rate_band": "649-829", "price_unit": "per_night", "availability_from": "2026-06-01", "availability_to": "2027-03-31"},
+      "in_stock": true,
+      "short_description": "Fika means coffee in Swedish — a bright cabin with black accents and a private jacuzzi on the terrace, steps from the forest and lake.",
+      "long_description": "Fika is the light-and-graphite one: warm oak floors, black steel details, floor-to-ceiling glass onto the pines, and a wood-fired jacuzzi on its own terrace. Fifty-six square metres sleep four in comfort — a downstairs bedroom and a snug mezzanine — with a full kitchen, underfloor heating, and a Smart TV for the slow evenings. The published rate is fully refundable up to 48 hours before arrival. Out the door: the Gostynin–Wloclawek forest for cycling and the lake a short walk away.",
+      "specs": {"sleeps": "4", "beds": "1 double + mezzanine", "size": "56 sqm", "view": "forest", "hot_tub": "private, on the terrace", "wifi": "free, whole cabin", "parking": "free, by the cabin"},
+      "review_highlights": [
+        "The terrace jacuzzi under the trees at dusk is the whole trip",
+        "Spotless, design-magazine pretty, and warm even on a cold weekend",
+        "Perfect forest quiet — we slept better here than we have in months"
+      ]
+    },
+    {
+      "product_id": "HY-LAGOM",
+      "title": "Domek Lagom — jacuzzi na tarasie",
+      "brand": "Osada Hygge",
+      "price": 649.0,
+      "currency": "PLN",
+      "rating": 4.9,
+      "review_count": 231,
+      "image_url": "https://client9681.idobooking.com/images/objects/pictures/large/3/1/108.jpg",
+      "category": "cabins",
+      "labels": ["Jacuzzi na tarasie", "Ulubieniec gości"],
+      "attributes": {"city": "Osada Hygge", "region": "Gostyninsko-Wloclawski Park Krajobrazowy", "room_type": "cały domek", "hot_tub": "yes", "sauna": "no", "pets_allowed": "yes", "breakfast_included": "no", "refundable": "yes", "typical_rate_band": "649-829", "price_unit": "per_night", "availability_from": "2026-06-01", "availability_to": "2027-03-31"},
+      "in_stock": true,
+      "short_description": "Lagom means 'just right' in Swedish — the original cabin, cosy and warm with gold-and-copper accents and a jacuzzi on the terrace.",
+      "long_description": "Lagom was the first Osada Hygge cabin and still the sentimental favourite: warm, pale tones lifted with gold and copper, a deep sofa built for reading, and a private jacuzzi on the terrace facing the trees. Same fifty-six square metres and layout as Fika — sleeps four across a bedroom and mezzanine, full kitchen, underfloor heating — in a softer, warmer palette. Fully refundable up to 48 hours before arrival. Bikes, the lake, and the forest trails are all on the doorstep.",
+      "specs": {"sleeps": "4", "beds": "1 double + mezzanine", "size": "56 sqm", "view": "forest", "hot_tub": "private, on the terrace", "wifi": "free, whole cabin", "parking": "free, by the cabin"},
+      "review_highlights": [
+        "The copper-and-cream styling is gorgeous and the bed is a cloud",
+        "Jacuzzi + a bottle of wine + total silence = perfect anniversary",
+        "Felt instantly homey; we didn't want to leave on Sunday"
+      ]
+    },
+    {
+      "product_id": "HY-GRON",
+      "title": "Domek Gron",
+      "brand": "Osada Hygge",
+      "price": 549.0,
+      "currency": "PLN",
+      "rating": 4.8,
+      "review_count": 176,
+      "image_url": "https://client9681.idobooking.com/images/objects/pictures/large/4/1/186.jpg",
+      "category": "cabins",
+      "labels": ["Blisko jeziora", "Przyjazny rodzinom"],
+      "attributes": {"city": "Osada Hygge", "region": "Gostyninsko-Wloclawski Park Krajobrazowy", "room_type": "cały domek", "hot_tub": "no", "sauna": "no", "pets_allowed": "yes", "breakfast_included": "no", "refundable": "yes", "typical_rate_band": "549-699", "price_unit": "per_night", "availability_from": "2026-06-01", "availability_to": "2027-03-31"},
+      "in_stock": true,
+      "short_description": "A charming, comfortable forest cabin near the lake — made for a cycling weekend, a hammock and a book, and easy space for kids to play.",
+      "long_description": "Gron ('green') is the outdoors cabin: fifty-six square metres opening to a large, safe garden by the Gostynin–Wloclawek forest, with a hammock, a fire pit, and the lake a short ride away. Sleeps four across a bedroom and mezzanine, with a full kitchen and a big table for board-game nights. No hot tub here — this one's for hammock afternoons and campfire evenings. Fully refundable up to 48 hours before arrival.",
+      "specs": {"sleeps": "4", "beds": "1 double + mezzanine", "size": "56 sqm", "view": "forest and garden", "hot_tub": "none", "wifi": "free, whole cabin", "parking": "free, by the cabin"},
+      "review_highlights": [
+        "Huge safe garden — the kids and dog were in heaven",
+        "Great base for cycling; the lake is a lovely short ride",
+        "Cosy inside, wild and green outside — exactly what we wanted"
+      ]
+    },
+    {
+      "product_id": "HY-HYGGELIG",
+      "title": "Domek Hyggelig",
+      "brand": "Osada Hygge",
+      "price": 499.0,
+      "currency": "PLN",
+      "rating": 4.8,
+      "review_count": 158,
+      "image_url": "https://client9681.idobooking.com/images/objects/pictures/large/5/1/166.jpg",
+      "category": "cabins",
+      "labels": ["Blisko jeziora", "Dobra cena"],
+      "attributes": {"city": "Osada Hygge", "region": "Gostyninsko-Wloclawski Park Krajobrazowy", "room_type": "cały domek", "hot_tub": "no", "sauna": "no", "pets_allowed": "yes", "breakfast_included": "no", "refundable": "yes", "typical_rate_band": "499-649", "price_unit": "per_night", "availability_from": "2026-06-01", "availability_to": "2027-03-31"},
+      "in_stock": true,
+      "short_description": "Hyggelig — Danish for 'cosy'. A warm, comfortable forest cabin near the lake, big on quiet and easy on the budget.",
+      "long_description": "Hyggelig lives up to its name: fifty-four square metres of warm, unfussy comfort in the forest near the lake, made for slow mornings and long walks. Sleeps four across a bedroom and mezzanine, with a full kitchen and a covered terrace for coffee whatever the weather. No hot tub — the appeal here is the calm and the price. Fully refundable up to 48 hours before arrival.",
+      "specs": {"sleeps": "4", "beds": "1 double + mezzanine", "size": "54 sqm", "view": "forest", "hot_tub": "none", "wifi": "free, whole cabin", "parking": "free, by the cabin"},
+      "review_highlights": [
+        "Best value of the cabins — warm, quiet, and genuinely cosy",
+        "Loved the covered terrace; we sat out even in the rain",
+        "Simple and comfortable, exactly what a forest getaway should be"
+      ]
+    },
+    {
+      "product_id": "HY-LYKKE",
+      "title": "Domek Lykke",
+      "brand": "Osada Hygge",
+      "price": 369.0,
+      "currency": "PLN",
+      "rating": 4.7,
+      "review_count": 92,
+      "image_url": "https://client9681.idobooking.com/images/objects/pictures/large/7/1/213.jpg",
+      "category": "cabins",
+      "labels": ["Dla dwojga", "Dobra cena"],
+      "attributes": {"city": "Osada Hygge", "region": "Gostyninsko-Wloclawski Park Krajobrazowy", "room_type": "cały domek", "hot_tub": "no", "sauna": "no", "pets_allowed": "yes", "breakfast_included": "no", "refundable": "yes", "typical_rate_band": "369-499", "price_unit": "per_night", "availability_from": "2026-06-01", "availability_to": "2027-03-31"},
+      "in_stock": true,
+      "short_description": "Lykke — Danish for 'happiness'. The newest and smallest cabin, a snug forest retreat sized for two.",
+      "long_description": "Lykke is the intimate one: forty-five square metres of bright, modern calm added in 2023, sized for two and tucked into the forest near the lake. A comfortable double, a full kitchenette, and a terrace for morning coffee among the pines. No hot tub, no fuss — just a quiet, easy escape at the friendliest rate on the property. Fully refundable up to 48 hours before arrival.",
+      "specs": {"sleeps": "2", "beds": "1 double", "size": "45 sqm", "view": "forest", "hot_tub": "none", "wifi": "free, whole cabin", "parking": "free, by the cabin"},
+      "review_highlights": [
+        "Perfect little escape for two — snug, bright, and brand new",
+        "Great price for the Osada Hygge quiet and forest setting",
+        "Small but thought-through; everything you need for a weekend"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "demo-user": [
+    {"key": "cabin_preference", "value": "prefers cabins with a private jacuzzi on the terrace (Fika or Lagom)", "category": "preference", "updated_at": "2026-05-30T18:20:00Z"},
+    {"key": "forest_quiet", "value": "wants forest quiet and a lake within walking distance", "category": "preference", "updated_at": "2026-06-27T21:45:00Z"},
+    {"key": "travels_with_dog", "value": "travels with her partner and a small dog, so needs pet-friendly cabins", "category": "preference", "updated_at": "2026-07-15T17:30:00Z"}
+  ]
+}
