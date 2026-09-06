@@ -4,16 +4,10 @@
 "use client";
 
 import { useState } from "react";
-import { ArrivingPanel, estimateOf, Greeting, HomeSection, type Order, plural, type Starter, Starters, upcoming, useStoreFrame } from "web-shared";
+import { ArrivingPanel, Greeting, HomeSection, type Order, type Starter, Starters, useStoreFrame } from "web-shared";
+import { type Lang, t } from "@/lib/i18n";
 import { NOUNS, TripThumb } from "@/lib/orders";
 import { PostcardWindow } from "../PostcardWindow";
-
-const STARTERS: Starter[] = [
-  { icon: "calendar", prompt: "Find a cabin for next weekend" },
-  { icon: "plane", prompt: "A cabin with a jacuzzi on the terrace" },
-  { icon: "return", prompt: "Somewhere pet-friendly near the lake" },
-  { icon: "pin", prompt: "What's the status of my booking?" },
-];
 
 /** The keys of DESTINATION_GRADIENTS in lib/format.ts. */
 const POSTCARD_CITIES = ["Fika", "Lagom", "Gron", "Hyggelig", "Lykke"];
@@ -30,25 +24,21 @@ const POSTCARD_IMAGES: Record<string, string> = {
 /** Sends just before the 300ms mail animation ends. */
 const MAILING_MS = 260;
 
-const OPENER = "Tell me your dates and the Hygge Assistant finds the right forest cabin for your stay.";
-
-function Brief({ trips }: { trips: Order[] | null }) {
-  const open = trips ? upcoming(trips) : [];
-  if (!open.length) return <>{OPENER}</>;
-  const next = estimateOf(open[0])?.date;
-  return (
-    <>
-      {plural(open.length, "stay")} coming up{next ? `; the next starts ${next}` : ""}. {OPENER}
-    </>
-  );
+function starters(lang: Lang): Starter[] {
+  return [
+    { icon: "calendar", prompt: t(lang, "starterWeekend") },
+    { icon: "plane", prompt: t(lang, "starterJacuzzi") },
+    { icon: "return", prompt: t(lang, "starterPets") },
+    { icon: "pin", prompt: t(lang, "starterBooking") },
+  ];
 }
 
-function Postcards() {
+function Postcards({ lang }: { lang: Lang }) {
   const { ask, chat } = useStoreFrame();
   const [mailingCity, setMailingCity] = useState<string | null>(null);
   const disabled = !chat || chat.busy || !chat.ready;
   const planTrip = (city: string) => {
-    const request = () => ask(`Tell me about the ${city} cabin`);
+    const request = () => ask(t(lang, "askCabin", { city }));
     // Reduced motion, or a card already on its way, sends at once.
     if (mailingCity || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       request();
@@ -68,7 +58,7 @@ function Postcards() {
           type="button"
           onClick={() => planTrip(city)}
           disabled={disabled}
-          aria-label={`Explore the ${city} cabin`}
+          aria-label={t(lang, "askCabin", { city })}
           className="al-reveal-item"
           style={{ animationDelay: `${(index + 4) * 60}ms` }}
         >
@@ -86,22 +76,16 @@ function Postcards() {
   );
 }
 
-export default function HomeView({ travelerName, trips, tripsFailed, onSeeTrips }: { travelerName: string; trips: Order[] | null; tripsFailed: boolean; onSeeTrips: () => void }) {
+export default function HomeView({ lang, travelerName, trips, tripsFailed, onSeeTrips }: { lang: Lang; travelerName: string; trips: Order[] | null; tripsFailed: boolean; onSeeTrips: () => void }) {
   return (
     <div className="flex flex-col gap-4">
-      <Greeting
-        title={
-          <h1 className="al-hero">
-            Ready to unwind, <em>{travelerName}</em>?
-          </h1>
-        }
-      >
-        <Brief trips={trips} />
+      <Greeting title={<h1 className="al-hero">{t(lang, "heroTitle", { name: travelerName })}</h1>}>
+        {t(lang, "opener")}
       </Greeting>
-      <Starters items={STARTERS} />
+      <Starters items={starters(lang)} />
       <ArrivingPanel orders={trips} failed={tripsFailed} nouns={NOUNS} thumb={(order) => <TripThumb order={order} />} onSeeAll={onSeeTrips} />
-      <HomeSection title="Start from a cabin" subtitle="Pick one and the Hygge Assistant tells you about it">
-        <Postcards />
+      <HomeSection title={t(lang, "sectionTitle")} subtitle={t(lang, "sectionSubtitle")}>
+        <Postcards lang={lang} />
       </HomeSection>
     </div>
   );

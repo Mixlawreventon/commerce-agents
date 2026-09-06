@@ -12,6 +12,8 @@ const SESSION_HEADER = "X-Session-Id";
  */
 export class AgentApi {
   session: string | null = null;
+  /** UI language code sent with each chat turn so the assistant replies in it. */
+  language: string | null = null;
   readonly base: string;
 
   /** `root` is the API's URL; `prefix` the role's route prefix ("/api", "/api/merchant"). */
@@ -109,7 +111,7 @@ export class AgentApi {
     const response = await fetch(`${this.base}/chat`, {
       method: "POST",
       headers: this.headers(true),
-      body: JSON.stringify({ message }),
+      body: JSON.stringify(this.language ? { message, language: this.language } : { message }),
     });
     if (!response.ok || !response.body) throw new Error(`chat request failed: ${response.status}`);
     yield* readEventStream(response.body);

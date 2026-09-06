@@ -4,18 +4,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { type AgentEvent, OrdersView, plural, StoreShell, type StoreView, upcoming, useAgentTurn, useResource, useSession } from "web-shared";
+import { type AgentEvent, OrdersView, StoreShell, type StoreView, useAgentTurn, useResource, useSession } from "web-shared";
 import Chat from "@/components/Chat";
 import TripPanel from "@/components/TripPanel";
 import HomeView from "@/components/views/HomeView";
 import { api, UNREACHABLE } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
+import { type Lang, LANGS, t, useLang } from "@/lib/i18n";
 import { NOUNS, TripThumb } from "@/lib/orders";
 import type { CartPayload } from "@/lib/types";
 
 type View = "assistant" | "trips";
-
-const ASSISTANT = "Hygge Assistant";
 
 function Wordmark() {
   return (
@@ -28,6 +27,24 @@ function Wordmark() {
   );
 }
 
+function LangSwitcher({ lang, onChange }: { lang: Lang; onChange: (l: Lang) => void }) {
+  return (
+    <div className="ml-2 flex items-center gap-0.5 rounded-full border border-(--line) p-0.5 text-[11px]" role="group" aria-label="Language">
+      {LANGS.map(({ code, label }) => (
+        <button
+          key={code}
+          type="button"
+          onClick={() => onChange(code)}
+          aria-pressed={lang === code}
+          className={`rounded-full px-1.5 py-0.5 leading-none ${lang === code ? "bg-(--ink) text-(--surface)" : "text-(--muted) hover:text-(--ink)"}`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function StorefrontPage() {
   const session = useSession(api);
   const [view, setView] = useState<View>("assistant");
@@ -35,6 +52,12 @@ export default function StorefrontPage() {
   // A staged checkout owns the panel's primary action until the trip changes again.
   const [checkoutStaged, setCheckoutStaged] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [lang, setLang] = useLang();
+
+  // Every chat turn carries the UI language so the assistant replies in it.
+  useEffect(() => {
+    api.language = lang;
+  }, [lang]);
 
   const onEvent = useCallback((event: AgentEvent) => {
     if (event.type === "cart_update") {
@@ -54,38 +77,43 @@ export default function StorefrontPage() {
   }, [session.sessionId]);
 
   const views: StoreView<View>[] = [
-    { id: "assistant", label: "Assistant", icon: "spark" },
-    { id: "trips", label: "Stays", icon: "plane" },
+    { id: "assistant", label: t(lang, "viewAssistant"), icon: "spark" },
+    { id: "trips", label: t(lang, "viewStays"), icon: "plane" },
   ];
   const shopper = session.shopper ?? { name: "Guest" };
   const count = cart?.items.length ?? 0;
 
   return (
     <StoreShell
-      brand={<Wordmark />}
+      brand={
+        <span className="flex items-center">
+          <Wordmark />
+          <LangSwitcher lang={lang} onChange={setLang} />
+        </span>
+      }
       views={views}
       view={view}
       onViewChange={setView}
       chat={chat}
       api={api}
-      assistantName={ASSISTANT}
+      assistantName={t(lang, "assistantName")}
       shopper={shopper}
-      bag={{ label: "Stay", count, noun: "booking", figure: count ? formatPrice(cart?.subtotal ?? 0) : null }}
+      bag={{ label: t(lang, "bagLabel"), count, noun: t(lang, "bagNoun"), figure: count ? formatPrice(cart?.subtotal ?? 0) : null }}
       panel={<TripPanel cart={cart} checkoutStaged={checkoutStaged} />}
       panelOpen={panelOpen}
       onPanelOpenChange={setPanelOpen}
-      placeholder={view === "trips" ? "Ask about a booking, a change, a refund…" : "Ask about a cabin, dates, a jacuzzi, your dog…"}
+      placeholder={view === "trips" ? t(lang, "placeholderStays") : t(lang, "placeholderAssistant")}
     >
       {/* The conversation stays mounted under the other view so its cards keep their state. */}
       <div className={view === "assistant" ? "h-full" : "hidden"}>
-        <Chat chat={chat} home={<HomeView travelerName={shopper.name} trips={trips} tripsFailed={tripsFailed} onSeeTrips={() => setView("trips")} />} />
+        <Chat chat={chat} home={<HomeView lang={lang} travelerName={shopper.name} trips={trips} tripsFailed={tripsFailed} onSeeTrips={() => setView("trips")} />} />
       </div>
       {view === "trips" ? (
         <OrdersView
           orders={trips}
           failed={tripsFailed}
           nouns={NOUNS}
-          subtitle={trips ? `${plural(upcoming(trips).length, "trip")} coming up. Ask about any of them, or plan the next one from a past trip.` : undefined}
+          subtitle={trips ? t(lang, "staysSubtitle") : undefined}
           thumb={(order) => <TripThumb order={order} />}
         />
       ) : null}

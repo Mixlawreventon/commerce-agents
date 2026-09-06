@@ -56,9 +56,15 @@ class StartSessionRequest(BaseModel):
     user_id: str = Field(default="demo-user", min_length=1, max_length=64)
 
 
+# The languages the storefront UI can request the assistant reply in.
+_LANGUAGE_NAMES = {"pl": "Polish", "en": "English", "de": "German"}
+
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     page: PageContext | None = None
+    # BCP-47-ish language code the UI is set to; the assistant is asked to reply in it.
+    language: str | None = Field(default=None, max_length=8)
 
 
 class CartAddRequest(BaseModel):
@@ -109,7 +115,13 @@ class StorefrontHost:
         )
 
     def chat(self, request: ChatRequest, record: StorefrontRecord) -> StreamingResponse:
-        append_user_turn(record, request.message, "App events")
+        message = request.message
+        # When the UI names a language, prepend a directive so the reply matches it even
+        # when the customer's message is in another language (place names, product ids).
+        language = _LANGUAGE_NAMES.get((request.language or "").lower())
+        if language:
+            message = f"[Reply in {language}, regardless of the language of this message.]\n{message}"
+        append_user_turn(record, message, "App events")
         return stream_turn(
             self.agent,
             self.sessions,
