@@ -25,6 +25,7 @@ import httpx
 
 from demo_common.storefront_fixtures import rank_products, summary_of
 from shopping_agent import (
+    Policy,
     Product,
     SearchFilters,
     ShoppingSessionContext,
@@ -44,7 +45,9 @@ class HyggeLive(MockTravel):
     def __init__(self, middleware_url: str, data_dir=DATA_DIR, today: date | None = None) -> None:
         super().__init__(data_dir=data_dir, today=today)
         self.mw = middleware_url.rstrip("/")
+        self.property: dict = {}
         self._overlay_live_cabins()
+        self._load_property()
 
     # ------------------------------------------------------------------
     # Middleware
@@ -94,6 +97,60 @@ class HyggeLive(MockTravel):
             product.attributes["cabin_id"] = str(cabin.get("id", ""))
         logger.info("overlaid %d live cabins", len(data.get("cabins", [])))
 
+    def _load_property(self) -> None:
+        """Real contact and stay facts (address, phone, email, check-in/out) from the
+        ``/api/agent-data`` property block, so the assistant answers with live values."""
+        arrival = self.today + timedelta(days=30)
+        data = self._get(
+            "/api/agent-data",
+            {
+                "arrival": arrival.isoformat(),
+                "departure": (arrival + timedelta(days=2)).isoformat(),
+                "persons": 2,
+            },
+        )
+        self.property = (data or {}).get("property", {}) or {}
+        if self.property:
+            logger.info("loaded property info for %s", self.property.get("name"))
+
+    def _contact_policy(self) -> Policy | None:
+        """A searchable policy built from the live property block; None if unavailable."""
+        p = self.property
+        if not p:
+            return None
+        checkin = (p.get("checkin") or {}).get("from")
+        checkout = (p.get("checkout") or {}).get("to")
+        lines = ["Osada Hygge — leśne domki nad jeziorem."]
+        if p.get("address"):
+            lines.append(f"Adres: {p['address']}.")
+        if p.get("phone"):
+            lines.append(f"Telefon: {p['phone'].replace('.', ' ').strip()}.")
+        if p.get("email"):
+            lines.append(f"E-mail: {p['email']}.")
+        if checkin or checkout:
+            lines.append(
+                f"Doba hotelowa: zameldowanie od {checkin or '15:00'}, "
+                f"wymeldowanie do {checkout or '11:00'}."
+            )
+        lines.append(
+            "Dokładne wskazówki dojazdu i zameldowania wysyłamy przed przyjazdem; "
+            "w razie pytań prosimy o kontakt telefoniczny lub mailowy."
+        )
+        return Policy(
+            policy_id="contact-and-practical",
+            title="Kontakt, adres i doba hotelowa",
+            category="contact",
+            content=" ".join(lines),
+        )
+
+    async def search_policies(self, session: ShoppingSessionContext, query: str) -> list[Policy]:
+        results = await super().search_policies(session, query)
+        contact = self._contact_policy()
+        if contact is not None:
+            # Live contact/stay facts lead; drop any static stand-in for the same thing.
+            results = [contact] + [p for p in results if p.policy_id != "contact-and-practical"]
+        return results
+
     # ------------------------------------------------------------------
     # Search
     # ------------------------------------------------------------------
@@ -123,8 +180,11 @@ class HyggeLive(MockTravel):
             # Middleware down: fall back to the static dated search.
             return await super().search_products(session, query, filters, limit)
 
-        # Map available cabins to their catalog products and their live nightly price.
+        nights = max((departure - travel_date).days, 1)
+        # Map available cabins to their catalog products, live nightly price, and the
+        # refundable / non-refundable rate split from each cabin's pricing_offers.
         live_price: dict[str, float] = {}
+        offer_rates: dict[str, dict[str, float]] = {}
         available: list = []
         for cabin in avail.get("available_cabins", []):
             slug = _ID_TO_SLUG.get(cabin.get("id"))
@@ -134,6 +194,13 @@ class HyggeLive(MockTravel):
             available.append(product)
             if cabin.get("price_per_night"):
                 live_price[slug] = float(cabin["price_per_night"])
+            rates: dict[str, float] = {}
+            for offer in cabin.get("pricing_offers", []):
+                total = offer.get("price")
+                if offer.get("type") in ("refundable", "nonrefundable") and total:
+                    rates[offer["type"]] = round(float(total) / nights)
+            if rates:
+                offer_rates[slug] = rates
 
         ranked = rank_products(
             available,
@@ -146,8 +213,15 @@ class HyggeLive(MockTravel):
         )
         results = [summary_of(product) for product in ranked]
         for product in results:
-            if product.product_id in live_price:
-                product.price = live_price[product.product_id]
+            rates = offer_rates.get(product.product_id, {})
+            # Show the lowest available rate on the card; keep both for the assistant.
+            product.price = min(
+                [live_price.get(product.product_id, product.price), *rates.values()]
+            )
+            if rates.get("refundable"):
+                product.attributes["refundable_rate"] = str(rates["refundable"])
+            if rates.get("nonrefundable"):
+                product.attributes["nonrefundable_rate"] = str(rates["nonrefundable"])
             if product.attributes.get("refundable") == "yes":
                 product.attributes["free_cancellation_until"] = cancellation_deadline(
                     product.category, travel_date
