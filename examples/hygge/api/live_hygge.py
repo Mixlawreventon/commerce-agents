@@ -31,7 +31,7 @@ from shopping_agent import (
     ShoppingSessionContext,
 )
 
-from .mock_travel import DATA_DIR, MockTravel, _travel_date, cancellation_deadline
+from .mock_travel import DATA_DIR, MockTravel, _travel_date
 
 logger = logging.getLogger("hygge.live")
 
@@ -222,10 +222,8 @@ class HyggeLive(MockTravel):
                 product.attributes["refundable_rate"] = str(rates["refundable"])
             if rates.get("nonrefundable"):
                 product.attributes["nonrefundable_rate"] = str(rates["nonrefundable"])
-            if product.attributes.get("refundable") == "yes":
-                product.attributes["free_cancellation_until"] = cancellation_deadline(
-                    product.category, travel_date
-                )
+            # The exact free-cancellation deadline is not exposed by the API — it is shown
+            # at booking — so we do not assert one here (only that a refundable rate exists).
             product.attributes["quoted_for"] = f"{travel_date.isoformat()}..{departure.isoformat()}"
         return results
 
