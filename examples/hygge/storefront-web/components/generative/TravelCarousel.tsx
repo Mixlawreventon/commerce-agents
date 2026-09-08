@@ -6,7 +6,15 @@
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { formatPrice, productCity, productPlace, productPriceUnit } from "@/lib/format";
 import type { Product, ProductsPayload } from "@/lib/types";
+import { Lightbox } from "../Lightbox";
 import { PostcardWindow } from "../PostcardWindow";
+
+/** The cabin's photo gallery from attributes.gallery ("url|url|…"), else its single hero. */
+function galleryImages(product: Product): string[] {
+  const gallery = (product.attributes?.gallery ?? "").split("|").filter(Boolean);
+  if (gallery.length) return gallery;
+  return product.image_url ? [product.image_url] : [];
+}
 import {
   BODY,
   CARD,
@@ -32,6 +40,13 @@ const HIDDEN_ATTRS = new Set([
   "date_flex",
   "typical_rate_band",
   "units_left_for_dates",
+  // Live-overlay bookkeeping (idobooking): not for display as chips.
+  "gallery",
+  "booking_url",
+  "cabin_id",
+  "quoted_for",
+  "region",
+  "area_m2",
 ]);
 
 function specChips(product: Product): string[] {
@@ -104,16 +119,45 @@ export function TravelCard({
   const soldOut = product.in_stock === false;
   const deadline = cancellationDeadline(product);
 
+  const images = galleryImages(product);
+  const hasGallery = images.length > 1;
+  const [galleryOpen, setGalleryOpen] = useState(false);
+
+  const photo = (
+    <PostcardWindow
+      city={productPlace(product)}
+      title={product.title}
+      imageUrl={product.image_url}
+      showLabel={false}
+      className={horizontal ? "h-full min-h-[90px] w-full" : "aspect-[16/10] w-full"}
+    />
+  );
+
   const window_ = (
     <div className={`relative ${horizontal ? "w-36 shrink-0 self-stretch" : ""}`}>
-      <PostcardWindow
-        city={productPlace(product)}
-        title={product.title}
-        imageUrl={product.image_url}
-        showLabel={false}
-        className={horizontal ? "h-full min-h-[90px] w-full" : "aspect-[16/10] w-full"}
-      />
+      {hasGallery ? (
+        <button
+          type="button"
+          onClick={() => setGalleryOpen(true)}
+          aria-label={`Open gallery, ${images.length} photos`}
+          className="block h-full w-full cursor-zoom-in"
+        >
+          {photo}
+          <span
+            className="absolute bottom-1.5 right-1.5 z-10 flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] text-white"
+            style={{ background: "rgba(12,20,16,0.6)" }}
+          >
+            <span aria-hidden>⊞</span>
+            {images.length}
+          </span>
+        </button>
+      ) : (
+        photo
+      )}
       {soldOut ? <SoldOutBand /> : null}
+      {galleryOpen ? (
+        <Lightbox images={images} onClose={() => setGalleryOpen(false)} />
+      ) : null}
     </div>
   );
 
