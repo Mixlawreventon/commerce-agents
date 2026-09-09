@@ -104,8 +104,9 @@ def _lifespan(on_startup: Sequence[Callable[[], Awaitable[None]]]):
 def build_app(title: str, on_startup: Sequence[Callable[[], Awaitable[None]]] = ()) -> FastAPI:
     """A FastAPI app that answers only to loopback host names (plus ``DEMO_ALLOWED_HOSTS``,
     for a deployment that puts its own authentication in front) and to any localhost
-    origin (plus the exact origins in ``DEMO_ALLOWED_ORIGINS``, for a deployment whose web
-    app is served from another host). Rejecting other Host headers stops DNS-rebinding,
+    origin (plus the exact origins in ``DEMO_ALLOWED_ORIGINS`` and any matching
+    ``DEMO_ALLOWED_ORIGIN_REGEX``, for a deployment whose web app is served from another
+    host, or from a fresh one on every deploy). Rejecting other Host headers stops DNS-rebinding,
     which CORS does not. Logs go to stderr at ``DEMO_LOG_LEVEL``: ``INFO`` is a line per
     model call, ``DEBUG`` adds the bodies."""
     logging.basicConfig(
@@ -123,6 +124,13 @@ def build_app(title: str, on_startup: Sequence[Callable[[], Awaitable[None]]] = 
         for origin in os.environ.get("DEMO_ALLOWED_ORIGINS", "").split(",")
         if origin.strip()
     ]
+    # A web app that gets a fresh host on every deploy (a preview URL) cannot be listed
+    # origin by origin, so a deployment may add one pattern, OR-ed with the localhost one.
+    # Keep it anchored to hosts the deployment owns: the regex must match the whole origin,
+    # so a pattern ending in a bare ".vercel.app" would admit anyone's deployment there.
+    origin_regex = r"http://(localhost|127\.0\.0\.1):\d+"
+    if extra_regex := os.environ.get("DEMO_ALLOWED_ORIGIN_REGEX", "").strip():
+        origin_regex = f"({origin_regex})|({extra_regex})"
     app = FastAPI(title=title, version="0.1.0", lifespan=_lifespan(on_startup))
     app.add_middleware(
         TrustedHostMiddleware,
@@ -131,7 +139,7 @@ def build_app(title: str, on_startup: Sequence[Callable[[], Awaitable[None]]] = 
     app.add_middleware(
         CORSMiddleware,
         allow_origins=extra_origins,
-        allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
+        allow_origin_regex=origin_regex,
         allow_methods=["*"],
         allow_headers=["*"],
     )
