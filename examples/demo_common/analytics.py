@@ -138,7 +138,7 @@ class EventLog:
         how many offers went out, and how many left for the booking system."""
         if not self._pool:
             return {}
-        window = f"{max(days, 1)} days"
+        window = str(max(days, 1))
         try:
             async with self._pool.acquire() as connection:
                 row = await connection.fetchrow(
@@ -159,7 +159,7 @@ class EventLog:
                       count(*) FILTER (WHERE kind = 'feedback'
                                          AND data->>'verdict' = 'down')         AS thumbs_down,
                       count(*) FILTER (WHERE kind = 'error')                    AS errors
-                    FROM events WHERE at > now() - $1::interval
+                    FROM events WHERE at > now() - ($1 || ' days')::interval
                     """,
                     window,
                 )
