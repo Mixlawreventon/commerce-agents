@@ -25,6 +25,8 @@ import httpx
 
 from demo_common.storefront_fixtures import rank_products, summary_of
 from shopping_agent import (
+    Cart,
+    CheckoutHandoff,
     Policy,
     Product,
     SearchFilters,
@@ -37,6 +39,9 @@ logger = logging.getLogger("hygge.live")
 
 # idobooking cabin id -> the catalog's stable product id, so orders and copy stay aligned.
 _ID_TO_SLUG = {12: "HY-FIKA", 13: "HY-LAGOM", 14: "HY-GRON", 15: "HY-HYGGELIG", 17: "HY-LYKKE"}
+# The booking widget URL only varies by cabin id, so build it deterministically rather than
+# relying on /api/cabins (which can return a partial cabin list).
+_WIDGET_URL = "https://client9681.idobooking.com/book-now/booking/defaultchoice/currency/1/language/1?ob[{id}]"
 # A dated search only knows the arrival; quote this many nights to check availability/price.
 _DEFAULT_QUOTE_NIGHTS = 2
 
@@ -73,11 +78,20 @@ class HyggeLive(MockTravel):
             return None
 
     def _overlay_live_cabins(self) -> None:
-        """Refresh price, photos, gallery, area, and booking URL from ``/api/cabins`` onto
-        the static products, keeping the catalog's long copy. Silent no-op if unreachable."""
+        """Refresh price, photos, gallery, and area from ``/api/cabins`` onto the static
+        products, keeping the catalog's long copy. The booking widget URL is set for every
+        cabin from the id template, so the self-service path works even if the live call
+        returns a partial list or fails."""
+        for cabin_id, slug in _ID_TO_SLUG.items():
+            product = self.products.get(slug)
+            if product is not None:
+                product.attributes["cabin_id"] = str(cabin_id)
+                product.attributes["booking_url"] = _WIDGET_URL.format(id=cabin_id)
         data = self._get("/api/cabins")
         if not data:
-            logger.warning("no live cabin data; serving the static catalog")
+            logger.warning(
+                "no live cabin data; serving the static catalog (booking URLs still set)"
+            )
             return
         for cabin in data.get("cabins", []):
             slug = _ID_TO_SLUG.get(cabin.get("id"))
@@ -150,6 +164,28 @@ class HyggeLive(MockTravel):
             # Live contact/stay facts lead; drop any static stand-in for the same thing.
             results = [contact] + [p for p in results if p.policy_id != "contact-and-practical"]
         return results
+
+    async def checkout_handoff(
+        self, session: ShoppingSessionContext, cart: Cart
+    ) -> list[CheckoutHandoff]:
+        """Self-service path: each cabin in the cart links to its idobooking booking widget,
+        where the reservation is made and paid via idopayments. The URL never reaches the
+        model — the host renders it on the checkout card."""
+        del session
+        handoffs: list[CheckoutHandoff] = []
+        seen: set[str] = set()
+        for item in cart.items:
+            if item.product_id in seen:
+                continue
+            seen.add(item.product_id)
+            product = self.products.get(item.product_id)
+            url = product.attributes.get("booking_url") if product else None
+            if url:
+                name = product.title if product else item.product_id
+                handoffs.append(
+                    CheckoutHandoff(url=url, label=f"Zarezerwuj w idobooking — {name}", seller=name)
+                )
+        return handoffs
 
     # ------------------------------------------------------------------
     # Search
