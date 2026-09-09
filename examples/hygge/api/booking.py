@@ -202,6 +202,17 @@ def create_booking_router() -> APIRouter:
         """Read-only check that the Admin API credentials work (no reservation created)."""
         return await auth_check()
 
+    @router.get("/book/egress-ip")
+    async def egress_ip() -> dict:
+        """This service's outbound IP — to allowlist it in idobooking's API access, if the
+        panel restricts API calls by IP."""
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                v4 = (await client.get("https://api.ipify.org")).text.strip()
+            return {"egress_ip": v4}
+        except Exception as error:
+            return {"error": str(error)}
+
     @router.post("/book")
     async def book(request: BookRequest) -> dict:
         return await create_reservation(request)
