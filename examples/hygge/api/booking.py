@@ -62,10 +62,31 @@ class BookRequest(BaseModel):
     guest: Guest
 
 
-def _admin_url(method: str) -> str:
+def _admin_url(gateway: str, method: str) -> str:
     domain = os.environ.get("IDOBOOKING_ADMIN_DOMAIN", "client9681.idosell.com").strip()
     version = os.environ.get("IDOBOOKING_API_VERSION", "36").strip()
-    return f"https://{domain}/api/reservations/{method}/{version}/json"
+    return f"https://{domain}/api/{gateway}/{method}/{version}/json"
+
+
+async def auth_check() -> dict:
+    """Read-only probe of the Admin API credentials via ``payments/getPaymentForms`` (no
+    reservation is created). Confirms login/key before attempting any write."""
+    creds = _creds()
+    if creds is None:
+        return {"ok": False, "configured": False}
+    login, key = creds
+    payload = {"authenticate": {"systemLogin": login, "systemKey": key}}
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            resp = await client.post(_admin_url("payments", "getPaymentForms"), json=payload)
+            body = resp.json()
+    except Exception as error:
+        return {"ok": False, "message": str(error)}
+    result = (body or {}).get("result", body) or {}
+    errors = result.get("errors") or {}
+    if errors.get("faultCode"):
+        return {"ok": False, "fault": errors, "raw": body}
+    return {"ok": True, "payment_forms": result.get("results"), "raw": body}
 
 
 async def create_reservation(req: BookRequest) -> dict:
@@ -122,7 +143,7 @@ async def create_reservation(req: BookRequest) -> dict:
     }
     try:
         async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.post(_admin_url("add"), json=payload)
+            resp = await client.post(_admin_url("reservations", "add"), json=payload)
             body = resp.json()
     except Exception as error:
         logger.warning("reservations/add call failed", exc_info=True)
@@ -154,7 +175,7 @@ async def cancel_reservation(reservation_id: int) -> dict:
     }
     try:
         async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.post(_admin_url("editStatus"), json=payload)
+            resp = await client.post(_admin_url("reservations", "editStatus"), json=payload)
             body = resp.json()
     except Exception as error:
         return {"ok": False, "message": str(error)}
@@ -175,6 +196,11 @@ def create_booking_router() -> APIRouter:
     async def config() -> dict:
         """Whether the assistant-booking path is available (drives the storefront UI)."""
         return {"configured": booking_configured()}
+
+    @router.get("/book/auth-check")
+    async def auth() -> dict:
+        """Read-only check that the Admin API credentials work (no reservation created)."""
+        return await auth_check()
 
     @router.post("/book")
     async def book(request: BookRequest) -> dict:
