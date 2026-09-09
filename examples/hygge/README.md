@@ -66,6 +66,8 @@ real deployment puts its own auth in front.
   `EVENT_RETENTION_DAYS` (90) are dropped daily. `GET /api/admin/stats` and
   `/api/admin/conversations` read them back, behind `ADMIN_TOKEN` and 404 without one.
   Unset `DATABASE_URL` and nothing is recorded, with every route behaving the same.
+  `storefront-web/app/admin` reads both back: it asks for the token and keeps it in
+  sessionStorage rather than the URL, which a history and every log would hold.
 - Booking hand-off: each cabin card links to its idobooking widget, tagged
   `utm_source=osada-hygge&utm_medium=assistant&utm_campaign=hygge-agent` so the booking
   system's own analytics attributes the visit.
