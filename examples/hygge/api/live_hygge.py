@@ -34,7 +34,14 @@ from shopping_agent import (
     ShoppingSessionContext,
 )
 
-from .mock_travel import _DEFAULT_GUESTS, DATA_DIR, MockTravel, _guest_count, _travel_date
+from .mock_travel import (
+    _DEFAULT_GUESTS,
+    DATA_DIR,
+    MockTravel,
+    _guest_count,
+    _night_count,
+    _travel_date,
+)
 
 logger = logging.getLogger("hygge.live")
 
@@ -361,8 +368,12 @@ class HyggeLive(MockTravel):
         self._session_dates[session.session_id] = travel_date.isoformat()
         # Quote the nights the guest actually plans: idobooking's packages only apply from
         # three nights up, so a fixed two-night probe would hide every one of them.
+        # What the guest said on this search wins; the itinerary's plan is the fallback, and
+        # two nights only when neither knows. The length decides which package applies.
         plan = self._trip_plans.get(session.session_id)
-        quote_nights = max(plan.trip_nights or 0, 1) if plan else _DEFAULT_QUOTE_NIGHTS
+        planned = plan.trip_nights if plan else None
+        quote_nights = _night_count(filters) or planned or _DEFAULT_QUOTE_NIGHTS
+        quote_nights = max(quote_nights, 1)
         departure = travel_date + timedelta(days=quote_nights)
         # The stated party drives availability and price: a cabin that cannot sleep them is
         # not a result, and a package is priced for the heads it covers.

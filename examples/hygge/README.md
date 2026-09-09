@@ -52,7 +52,8 @@ real deployment puts its own auth in front.
   A `travel_date` filter is enforced as availability; a dated result is a quote with a
   `date_flex` rate strip and `free_cancellation_until`. A cabin's first `add_to_cart` books
   the planned nights. A `guests` filter is enforced as capacity against `max_guests`: every
-  head counts the same, and a baby under one sleeping with its parents is not a head.
+  head counts the same, and a baby under one sleeping with its parents is not a head. A
+  `nights` filter is the stay length the quote covers.
 - `api/live_hygge.py`: `HyggeLive`, the same backend with live idobooking data overlaid
   when `IDOBOOKING_MIDDLEWARE_URL` is set — price, photos, real availability, and the
   named packages a stay earns. Every card carries the packages on offer, including the

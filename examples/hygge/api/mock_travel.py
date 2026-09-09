@@ -59,6 +59,10 @@ _TRAVEL_DATE = "travel_date"
 _GUESTS = "guests"
 _DEFAULT_GUESTS = 2
 _MAX_GUESTS = 12
+# How many nights the guest asked for. Stated on the search itself, because the length of
+# the stay decides which package it earns and a guest says it long before any itinerary.
+_NIGHTS = "nights"
+_MAX_NIGHTS = 30
 _SEARCH_WEIGHTS = {
     "title": 3.0,
     "cities": 2.5,
@@ -108,6 +112,17 @@ def _guest_count(filters: SearchFilters | None) -> int:
     except ValueError:
         return _DEFAULT_GUESTS
     return min(max(stated, 1), _MAX_GUESTS)
+
+
+def _night_count(filters: SearchFilters | None) -> int | None:
+    """The stay length stated on the search, or None when the guest has not said."""
+    if filters is None:
+        return None
+    try:
+        stated = int(filters.attributes.get(_NIGHTS, ""))
+    except ValueError:
+        return None
+    return min(max(stated, 1), _MAX_NIGHTS)
 
 
 def _fits_party(product: ProductDetails, filters: SearchFilters) -> bool:
@@ -238,7 +253,7 @@ class MockTravel(StorefrontBackend):
         # Party size is a capacity rule, not an attribute to match: left to the generic
         # matcher, "4" would be hunted for across every attribute and the title.
         return matches_attribute_filters(
-            product, filters, ignore=frozenset({_TRAVEL_DATE, _GUESTS})
+            product, filters, ignore=frozenset({_TRAVEL_DATE, _GUESTS, _NIGHTS})
         ) and _fits_party(product, filters)
 
     async def search_products(
