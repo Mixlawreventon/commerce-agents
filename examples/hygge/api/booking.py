@@ -80,6 +80,8 @@ async def create_reservation(req: BookRequest) -> dict:
 
     login, key = creds
     status = os.environ.get("IDOBOOKING_RESERVATION_STATUS", "unconfirmed").strip()
+    # Only notify the guest for a real (live) booking; a test reservation stays silent.
+    notify = "y" if status == "waitingForPayment" else "n"
     payload = {
         "authenticate": {"userLogin": login, "authenticateKey": key},
         "params": {
@@ -90,7 +92,7 @@ async def create_reservation(req: BookRequest) -> dict:
                     "price": req.price,
                     "status": status,
                     "currency": "PLN",
-                    "notify": "y",
+                    "notify": notify,
                     "internalSource": "other",
                     "clientData": {
                         "type": "person",
@@ -139,6 +141,31 @@ async def create_reservation(req: BookRequest) -> dict:
     return {"ok": False, "message": "idobooking did not confirm the reservation.", "raw": body}
 
 
+async def cancel_reservation(reservation_id: int) -> dict:
+    """Cancel a reservation via ``reservations/editStatus`` (used to clean up test bookings)."""
+    creds = _creds()
+    if creds is None:
+        return {"ok": False, "configured": False}
+    login, key = creds
+    payload = {
+        "authenticate": {"userLogin": login, "authenticateKey": key},
+        "reservations": [{"reservationId": reservation_id, "status": "canceled", "notify": "n"}],
+    }
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(_admin_url("editStatus"), json=payload)
+            body = resp.json()
+    except Exception as error:
+        return {"ok": False, "message": str(error)}
+    rows = (body or {}).get("reservations") or []
+    ok = bool(rows and rows[0].get("success"))
+    return {"ok": ok, "raw": body}
+
+
+class CancelRequest(BaseModel):
+    reservation_id: int = Field(ge=1)
+
+
 def create_booking_router() -> APIRouter:
     router = APIRouter()
 
@@ -150,5 +177,9 @@ def create_booking_router() -> APIRouter:
     @router.post("/book")
     async def book(request: BookRequest) -> dict:
         return await create_reservation(request)
+
+    @router.post("/book/cancel")
+    async def cancel(request: CancelRequest) -> dict:
+        return await cancel_reservation(request.reservation_id)
 
     return router
