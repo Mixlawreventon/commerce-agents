@@ -6,6 +6,7 @@ storefront web app calls.
 
     POST   /api/session               bind a session to a demo profile, return its id and name
     POST   /api/chat                  one turn, streamed as SSE AgentEvents
+    POST   /api/feedback              a guest's verdict on one reply
     GET    /api/products[/{id}]       catalog reads (public)
     GET    /api/cart                  the session's cart
     GET    /api/orders                the session user's orders, newest first
@@ -21,10 +22,11 @@ dependency, and mounts a direct add-to-cart button through ``StorefrontHost.dire
 # Route parameters below are annotated with dependencies built at call time, so this
 # module evaluates its annotations eagerly (no ``from __future__ import annotations``).
 
+import logging
 from collections.abc import Awaitable, Callable, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from fastapi import Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -37,10 +39,13 @@ from shopping_agent.gates import OPTIONS_GATE, PROVENANCE_GATE
 from shopping_agent.serialization import cart_payload as serialize_cart
 from shopping_agent_runtime import ShoppingAgent
 
+from .analytics import EventLog
 from .host import DemoStorefront, append_user_turn, build_app, stream_turn
 from .memory import MemoryFactEdit, MemorySeeder, install_memory_routes
 from .sessions import SessionRecord, SessionStore, session_dependency
 from .storefront_fixtures import SUMMARY_EXCLUDES
+
+logger = logging.getLogger(__name__)
 
 StorefrontRecord = SessionRecord[ShoppingSessionState]
 
@@ -54,6 +59,15 @@ _HELD_ADD_TEXT = {
 class StartSessionRequest(BaseModel):
     # The demo's stand-in for a credential: a profile from data/users.json.
     user_id: str = Field(default="demo-user", min_length=1, max_length=64)
+
+
+class FeedbackRequest(BaseModel):
+    """What a guest said about one reply. ``message_index`` is that reply's position in the
+    rendered conversation, so a row can be read back against the transcript."""
+
+    verdict: Literal["up", "down"]
+    message_index: int = Field(ge=0)
+    reason: str | None = Field(default=None, max_length=2000)
 
 
 # The languages the storefront UI can request the assistant reply in.
@@ -101,6 +115,8 @@ class StorefrontHost:
         self.CurrentSession = session_dependency(self.sessions, "/api/session")
         self._env_hint = env_hint
         self._cart_extras = cart_extras or (lambda record: {})
+        # Off unless DATABASE_URL names a Postgres; see analytics.EventLog.
+        self.events = EventLog()
 
     def context(
         self, record: StorefrontRecord, page: PageContext | None = None
@@ -124,13 +140,63 @@ class StorefrontHost:
                 f"[Reply in {language}, regardless of the language of this message.]\n{message}"
             )
         append_user_turn(record, message, "App events")
+        self.events.record(
+            "message",
+            session_id=record.session_id,
+            user_id=record.user_id,
+            role="guest",
+            text=request.message,
+            language=request.language,
+        )
         return stream_turn(
             self.agent,
             self.sessions,
             record,
             self.context(record, request.page),
             env_hint=self._env_hint,
+            observer=self._turn_observer(record),
         )
+
+    def _turn_observer(self, record: StorefrontRecord) -> Callable[[Any], None]:
+        """Collects a turn's reply as it streams and records it once the turn ends, so the
+        log holds whole answers rather than a row per token. Searches are recorded as they
+        happen: one that found nothing is the most useful row in the table."""
+        reply: list[str] = []
+
+        def observe(event: Any) -> None:
+            try:
+                if event.type == "text_delta":
+                    reply.append(str(event.data.get("text", "")))
+                elif event.type == "tool_call":
+                    self.events.record(
+                        "tool_call",
+                        session_id=record.session_id,
+                        user_id=record.user_id,
+                        tool=event.data.get("tool"),
+                        arguments=event.data.get("input"),
+                    )
+                elif event.type == "error":
+                    self.events.record(
+                        "error",
+                        session_id=record.session_id,
+                        user_id=record.user_id,
+                        message=event.data.get("message"),
+                    )
+                elif event.type == "turn_complete":
+                    text = "".join(reply).strip()
+                    reply.clear()
+                    if text:
+                        self.events.record(
+                            "message",
+                            session_id=record.session_id,
+                            user_id=record.user_id,
+                            role="assistant",
+                            text=text,
+                        )
+            except Exception:  # recording must never break the turn it is watching
+                logger.warning("could not observe a turn event", exc_info=True)
+
+        return observe
 
     async def cart_payload(self, record: StorefrontRecord) -> dict[str, Any]:
         cart = await self.backend.get_cart(self.context(record))
@@ -199,6 +265,9 @@ def build_storefront_host(
         on_startup=[lambda: memory_seeder.seed_at_boot(cast(MemoryStore, agent.memory.store))],
     )
     app = host.app
+    # The pool belongs to the running loop, so it is opened at startup, not at construction.
+    app.router.on_startup.append(host.events.open)
+    app.router.on_shutdown.append(host.events.close)
     read_product = product_of or backend.product
     detail_of = product_detail or (lambda product: product.model_dump())
     CurrentSession = host.CurrentSession
@@ -207,6 +276,7 @@ def build_storefront_host(
     async def start_session(request: StartSessionRequest | None = None) -> dict:
         record = host.sessions.start((request or StartSessionRequest()).user_id)
         profile = await backend.get_preferences(host.context(record))
+        host.events.record("session_start", session_id=record.session_id, user_id=record.user_id)
         return {
             "session_id": record.session_id,
             "user_id": record.user_id,
@@ -218,6 +288,20 @@ def build_storefront_host(
     @app.post("/api/chat", dependencies=[Depends(before_turn)] if before_turn else [])
     async def chat(request: ChatRequest, record: CurrentSession) -> StreamingResponse:
         return host.chat(request, record)
+
+    @app.post("/api/feedback")
+    async def leave_feedback(request: FeedbackRequest, record: CurrentSession) -> dict:
+        """A guest's verdict on one reply. Recorded whether or not the log is on, so the
+        button behaves the same in the examples as on a deployment that keeps the rows."""
+        host.events.record(
+            "feedback",
+            session_id=record.session_id,
+            user_id=record.user_id,
+            verdict=request.verdict,
+            message_index=request.message_index,
+            reason=request.reason,
+        )
+        return {"recorded": True}
 
     @app.get("/api/products")
     async def list_products(category: str | None = None, limit: int = 24) -> dict:

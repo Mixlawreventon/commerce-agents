@@ -60,6 +60,9 @@ real deployment puts its own auth in front.
   deeper one a longer stay would reach; the season rate behind them is an internal
   pricing-plan name and never shown. Checkout hands off a widget URL pre-configured with
   the cabin, dates, and party size.
+- Analytics: with `DATABASE_URL` set, `../demo_common/analytics.py` records one row per
+  session start, message, tool call, error, and guest verdict; `POST /api/feedback`
+  takes the verdict. Unset, nothing is recorded and every route behaves the same.
 - `api/agent_config.py`: the shopping config (brand, warm Scandinavian voice, PLN, and a
   real model id via `SHOPPING_MODEL`) and the merchant config.
 - `api/main.py`: the storefront host with the itinerary extension and an in-memory store

@@ -40,7 +40,11 @@ type Key =
   | "bagTotal"
   | "bagTotalNote"
   | "bagAsk"
-  | "starterPackages";
+  | "starterPackages"
+  | "feedbackDown"
+  | "feedbackReason"
+  | "feedbackSend"
+  | "feedbackThanks";
 
 const DICT: Record<Lang, Record<Key, string>> = {
   pl: {
@@ -69,6 +73,10 @@ const DICT: Record<Lang, Record<Key, string>> = {
     bagTotalNote: "Cena całkowita; nic nie jest pobierane na tym etapie.",
     bagAsk: "Zapytaj o ten pobyt",
     starterPackages: "Jakie są promocje na dłuższy pobyt?",
+    feedbackDown: "Ta odpowiedź mi nie pomogła",
+    feedbackReason: "Co było nie tak? (opcjonalnie)",
+    feedbackSend: "Wyślij",
+    feedbackThanks: "Dziękujemy — przekazaliśmy to dalej.",
   },
   en: {
     viewAssistant: "Assistant",
@@ -96,6 +104,10 @@ const DICT: Record<Lang, Record<Key, string>> = {
     bagTotalNote: "All-in; nothing is charged at this stage.",
     bagAsk: "Ask about this stay",
     starterPackages: "What discounts are there for a longer stay?",
+    feedbackDown: "This reply didn't help",
+    feedbackReason: "What was wrong? (optional)",
+    feedbackSend: "Send",
+    feedbackThanks: "Thank you — we've passed this on.",
   },
   de: {
     viewAssistant: "Assistent",
@@ -123,6 +135,10 @@ const DICT: Record<Lang, Record<Key, string>> = {
     bagTotalNote: "Gesamtpreis; in dieser Phase wird nichts abgebucht.",
     bagAsk: "Frag nach diesem Aufenthalt",
     starterPackages: "Welche Rabatte gibt es für einen längeren Aufenthalt?",
+    feedbackDown: "Diese Antwort hat nicht geholfen",
+    feedbackReason: "Was war falsch? (optional)",
+    feedbackSend: "Senden",
+    feedbackThanks: "Danke — wir geben das weiter.",
   },
 };
 

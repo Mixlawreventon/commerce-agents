@@ -177,17 +177,22 @@ def stream_turn(
     session: Any,
     *,
     env_hint: str,
+    observer: Callable[[AgentEvent], None] | None = None,
 ) -> StreamingResponse:
     """Stream one turn as SSE; the record is written back once the stream has ended (the
     request dependency wrote back before it began). Credential failures become a readable
     error event naming ``env_hint`` (the example's ``.env`` path); anything else is logged
-    and reported generically. Memory extraction runs after the response has streamed."""
+    and reported generically. Memory extraction runs after the response has streamed.
+    ``observer`` sees each event as it goes out, for a deployment recording its own
+    traffic; it is called inside the stream, so it must not block and must not raise."""
 
     async def event_stream() -> AsyncIterator[str]:
         try:
             async for event in agent.stream_turn(record.messages, session, record.state):
                 if event.type == "turn_complete" and event.data.get("results_cleared"):
                     record.stored_messages = 0  # earlier messages changed: rewrite the transcript
+                if observer is not None:
+                    observer(event)
                 yield to_sse(event)
         except anthropic.AuthenticationError:
             logger.exception("chat turn failed: API authentication")

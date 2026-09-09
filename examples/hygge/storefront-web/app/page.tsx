@@ -113,7 +113,7 @@ export default function StorefrontPage() {
     >
       {/* The conversation stays mounted under the other view so its cards keep their state. */}
       <div className={view === "assistant" ? "h-full" : "hidden"}>
-        <Chat chat={chat} home={<HomeView lang={lang} travelerName={shopper.name} trips={trips} tripsFailed={tripsFailed} onSeeTrips={() => setView("trips")} light={LIGHT_UI} />} />
+        <Chat chat={chat} lang={lang} home={<HomeView lang={lang} travelerName={shopper.name} trips={trips} tripsFailed={tripsFailed} onSeeTrips={() => setView("trips")} light={LIGHT_UI} />} />
       </div>
       {view === "trips" && !LIGHT_UI ? (
         <OrdersView
