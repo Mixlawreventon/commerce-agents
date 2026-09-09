@@ -55,7 +55,11 @@ def build_shopping_config() -> ShoppingAgentConfig:
             "Packages for longer stays are live data, not policy: when a guest asks about "
             "discounts, promotions, or offers, search rather than answering from what you "
             "already hold — the results name the packages currently on and what a longer "
-            "stay would earn. Never tell a guest there are none without having searched."
+            "stay would earn. Never tell a guest there are none without having searched. "
+            "A dated search marks cabins that are taken for those nights as out of stock "
+            "rather than hiding them: say they are booked and offer other dates. Never "
+            "conclude from a search that Osada Hygge lacks a cabin or a feature — the "
+            "five cabins and what they have are constant, only the free nights change."
         ),
     )
 

@@ -427,6 +427,21 @@ class HyggeLive(MockTravel):
             if quote["package"]:
                 packages[slug] = quote["package"]
 
+        if not available:
+            # Every cabin is taken for these dates. Returning nothing would be read as "no
+            # such cabin exists" — asked which cabins have a jacuzzi in a fully booked
+            # week, the assistant answered that the property may not have one. Show what
+            # matches, marked as taken, so the answer is "booked then" and the card wears
+            # its sold-out band.
+            taken = await super().search_products(session, query, filters, limit)
+            for product in taken:
+                product.in_stock = False
+                product.attributes["quoted_for"] = (
+                    f"{travel_date.isoformat()}..{departure.isoformat()}"
+                )
+            self._attach_ladder(taken, await self._package_ladder(travel_date, guests))
+            return taken
+
         ranked = rank_products(
             available,
             query,

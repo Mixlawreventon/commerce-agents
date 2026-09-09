@@ -150,7 +150,8 @@ class StorefrontHost:
         language = _LANGUAGE_NAMES.get((request.language or "").lower())
         if language:
             message = (
-                f"[Reply in {language}, regardless of the language of this message.]\n{message}"
+                f"[Reply in {language}, regardless of the language of this message. "
+                f"Write dates, month names and weekdays in {language} too.]\n{message}"
             )
         append_user_turn(record, message, "App events")
         self.events.record(
