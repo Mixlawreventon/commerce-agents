@@ -7,10 +7,16 @@ import { useState } from "react";
 import { ArrivingPanel, Greeting, HomeSection, type Order, type Starter, Starters, useStoreFrame } from "web-shared";
 import { type Lang, t } from "@/lib/i18n";
 import { NOUNS, TripThumb } from "@/lib/orders";
+import { BODY, DISPLAY } from "../generative/shared";
 import { PostcardWindow } from "../PostcardWindow";
 
 /** The keys of DESTINATION_GRADIENTS in lib/format.ts. */
 const POSTCARD_CITIES = ["Fika", "Lagom", "Gron", "Hyggelig", "Lykke"];
+
+/** Which cabins have the terrace SPA pool, from hot_tub in data/catalog.json. The postcards
+ * are named, not loaded from the catalog, so this list is named beside them for the same
+ * reason POSTCARD_IMAGES is: it is the one fact a guest scans this row for. */
+const POSTCARD_HOT_TUB = new Set(["Fika", "Lagom"]);
 
 /** Primary photo per cabin (idobooking); mirrors each cabin's image_url in data/catalog.json. */
 const POSTCARD_IMAGES: Record<string, string> = {
@@ -69,8 +75,20 @@ function Postcards({ lang }: { lang: Lang }) {
               index % 2 ? "al-postcard-rest al-postcard-rest--alt" : "al-postcard-rest"
             } ${mailingCity === city ? "al-postcard-mailing" : ""}`}
           >
-            <PostcardWindow city={city} title={city} imageUrl={POSTCARD_IMAGES[city]} className="aspect-[4/3] w-full" />
+            <PostcardWindow city={city} title={city} showLabel={false} imageUrl={POSTCARD_IMAGES[city]} className="aspect-[4/3] w-full" />
           </div>
+          {/* Named under the photo, with the one feature that decides the choice for most
+              guests, so the row can be scanned rather than opened cabin by cabin. */}
+          <span className="mt-1 flex flex-col items-start leading-tight">
+            <span style={{ fontFamily: DISPLAY, fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>
+              {city}
+            </span>
+            {POSTCARD_HOT_TUB.has(city) ? (
+              <span style={{ fontFamily: BODY, fontSize: 11, color: "var(--accent)" }}>
+                jacuzzi na tarasie
+              </span>
+            ) : null}
+          </span>
         </button>
       ))}
     </div>

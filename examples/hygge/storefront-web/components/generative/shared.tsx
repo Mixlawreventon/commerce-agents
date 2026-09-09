@@ -141,9 +141,9 @@ function ratePosition(price: number, band?: string): RatePosition | null {
 }
 
 const RATE_POSITION_LABELS: Record<RatePosition["position"], string> = {
-  lower: "Lower than typical",
-  typical: "Typical rate",
-  higher: "Above typical",
+  lower: "Poniżej zwykłej ceny",
+  typical: "Zwykła cena",
+  higher: "Powyżej zwykłej ceny",
 };
 
 export function RateGauge({ price, band }: { price: number; band?: string }) {

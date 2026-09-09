@@ -311,7 +311,7 @@ export function TravelCard({
           </span>
           {unit ? (
             <span style={{ ...META, fontSize: 11, marginLeft: 3 }}>
-              {unit} · all-in
+              {unit} · z opłatami
             </span>
           ) : null}
         </span>
