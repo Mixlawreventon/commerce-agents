@@ -106,7 +106,10 @@ class StorefrontHost:
         cart_extras: Callable[[StorefrontRecord], dict[str, Any]] | None,
         on_startup: Sequence[Callable[[], Awaitable[None]]] = (),
     ) -> None:
-        self.app = build_app(title, on_startup)
+        # Off unless DATABASE_URL names a Postgres; see analytics.EventLog. Built before
+        # the app so its pool opens inside the running loop, with the other startup steps.
+        self.events = EventLog()
+        self.app = build_app(title, [*on_startup, self.events.open], [self.events.close])
         self.backend = backend
         self.agent = agent
         self.memory_store = cast(MemoryStore, agent.memory.store)
@@ -115,8 +118,6 @@ class StorefrontHost:
         self.CurrentSession = session_dependency(self.sessions, "/api/session")
         self._env_hint = env_hint
         self._cart_extras = cart_extras or (lambda record: {})
-        # Off unless DATABASE_URL names a Postgres; see analytics.EventLog.
-        self.events = EventLog()
 
     def context(
         self, record: StorefrontRecord, page: PageContext | None = None
@@ -265,9 +266,6 @@ def build_storefront_host(
         on_startup=[lambda: memory_seeder.seed_at_boot(cast(MemoryStore, agent.memory.store))],
     )
     app = host.app
-    # The pool belongs to the running loop, so it is opened at startup, not at construction.
-    app.router.on_startup.append(host.events.open)
-    app.router.on_shutdown.append(host.events.close)
     read_product = product_of or backend.product
     detail_of = product_detail or (lambda product: product.model_dump())
     CurrentSession = host.CurrentSession

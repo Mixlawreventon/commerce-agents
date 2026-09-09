@@ -85,7 +85,10 @@ def spawn_background(coro: Coroutine[Any, Any, object]) -> None:
     task.add_done_callback(_background_tasks.discard)
 
 
-def _lifespan(on_startup: Sequence[Callable[[], Awaitable[None]]]):
+def _lifespan(
+    on_startup: Sequence[Callable[[], Awaitable[None]]],
+    on_shutdown: Sequence[Callable[[], Awaitable[None]]] = (),
+):
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         if not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
@@ -96,12 +99,20 @@ def _lifespan(on_startup: Sequence[Callable[[], Awaitable[None]]]):
             )
         for step in on_startup:
             await step()
-        yield
+        try:
+            yield
+        finally:
+            for step in on_shutdown:
+                await step()
 
     return lifespan
 
 
-def build_app(title: str, on_startup: Sequence[Callable[[], Awaitable[None]]] = ()) -> FastAPI:
+def build_app(
+    title: str,
+    on_startup: Sequence[Callable[[], Awaitable[None]]] = (),
+    on_shutdown: Sequence[Callable[[], Awaitable[None]]] = (),
+) -> FastAPI:
     """A FastAPI app that answers only to loopback host names (plus ``DEMO_ALLOWED_HOSTS``,
     for a deployment that puts its own authentication in front) and to any localhost
     origin (plus the exact origins in ``DEMO_ALLOWED_ORIGINS`` and any matching
@@ -131,7 +142,9 @@ def build_app(title: str, on_startup: Sequence[Callable[[], Awaitable[None]]] = 
     origin_regex = r"http://(localhost|127\.0\.0\.1):\d+"
     if extra_regex := os.environ.get("DEMO_ALLOWED_ORIGIN_REGEX", "").strip():
         origin_regex = f"({origin_regex})|({extra_regex})"
-    app = FastAPI(title=title, version="0.1.0", lifespan=_lifespan(on_startup))
+    # These run through the lifespan, not app.on_event: Starlette ignores a router's
+    # startup and shutdown handlers entirely once a lifespan is given.
+    app = FastAPI(title=title, version="0.1.0", lifespan=_lifespan(on_startup, on_shutdown))
     app.add_middleware(
         TrustedHostMiddleware,
         allowed_hosts=["localhost", "127.0.0.1", *(host for host in extra_hosts if host)],
