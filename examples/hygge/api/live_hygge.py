@@ -42,6 +42,11 @@ _ID_TO_SLUG = {12: "HY-FIKA", 13: "HY-LAGOM", 14: "HY-GRON", 15: "HY-HYGGELIG", 
 # The booking widget URL only varies by cabin id, so build it deterministically rather than
 # relying on /api/cabins (which can return a partial cabin list).
 _WIDGET_URL = "https://client9681.idobooking.com/book-now/booking/defaultchoice/currency/1/language/1?ob[{id}]"
+# Same widget, pre-configured with the guest's dates and party size — a ready-to-pay offer.
+_WIDGET_URL_DATED = (
+    "https://client9681.idobooking.com/book-now/booking/defaultchoice"
+    "/start_date/{start}/end_date/{end}/currency/1/language/1?ob[{id}]&rooms=1&persons-adult={adults}"
+)
 # A dated search only knows the arrival; quote this many nights to check availability/price.
 _DEFAULT_QUOTE_NIGHTS = 2
 
@@ -51,6 +56,8 @@ class HyggeLive(MockTravel):
         super().__init__(data_dir=data_dir, today=today)
         self.mw = middleware_url.rstrip("/")
         self.property: dict = {}
+        # Last check-in date searched per session, so checkout can hand off a dated offer.
+        self._session_dates: dict[str, str] = {}
         self._overlay_live_cabins()
         self._load_property()
 
@@ -169,9 +176,10 @@ class HyggeLive(MockTravel):
         self, session: ShoppingSessionContext, cart: Cart
     ) -> list[CheckoutHandoff]:
         """Self-service path: each cabin in the cart links to its idobooking booking widget,
-        where the reservation is made and paid via idopayments. The URL never reaches the
-        model — the host renders it on the checkout card."""
-        del session
+        pre-configured with the guest's dates and party size when known — a ready-to-pay
+        offer. Reservation and payment happen in idobooking/idopayments. The URL never
+        reaches the model; the host renders it on the checkout card."""
+        arrival = self._session_dates.get(session.session_id)
         handoffs: list[CheckoutHandoff] = []
         seen: set[str] = set()
         for item in cart.items:
@@ -179,13 +187,32 @@ class HyggeLive(MockTravel):
                 continue
             seen.add(item.product_id)
             product = self.products.get(item.product_id)
-            url = product.attributes.get("booking_url") if product else None
+            if product is None:
+                continue
+            cabin_id = product.attributes.get("cabin_id")
+            name = product.title
+            url = self._booking_url(cabin_id, arrival, item.quantity) or product.attributes.get(
+                "booking_url"
+            )
             if url:
-                name = product.title if product else item.product_id
                 handoffs.append(
                     CheckoutHandoff(url=url, label=f"Zarezerwuj w idobooking — {name}", seller=name)
                 )
         return handoffs
+
+    def _booking_url(self, cabin_id: str | None, arrival: str | None, nights: int) -> str | None:
+        """A dated widget URL (cabin + dates + guests) when the check-in is known, else None
+        so the caller falls back to the plain per-cabin URL."""
+        if not cabin_id or not arrival:
+            return None
+        try:
+            start = date.fromisoformat(arrival)
+            end = start + timedelta(days=max(nights, 1))
+        except ValueError:
+            return None
+        return _WIDGET_URL_DATED.format(
+            start=start.isoformat(), end=end.isoformat(), id=cabin_id, adults=2
+        )
 
     # ------------------------------------------------------------------
     # Search
@@ -203,6 +230,8 @@ class HyggeLive(MockTravel):
             # No dates: rank the whole (live-priced) catalog, as the static backend does.
             return await super().search_products(session, query, filters, limit)
 
+        # Remember the check-in so checkout can hand off a dated, ready-to-pay offer.
+        self._session_dates[session.session_id] = travel_date.isoformat()
         departure = travel_date + timedelta(days=_DEFAULT_QUOTE_NIGHTS)
         avail = await self._aget(
             "/api/availability",
