@@ -10,8 +10,8 @@ cabin's idobooking widget) needs none of this and always works.
 
 Enabled only when Admin API credentials are present, so the store runs fine without them:
 
-    IDOBOOKING_API_LOGIN         panel API login (userLogin)
-    IDOBOOKING_API_PASSWORD      panel API key (authenticateKey)
+    IDOBOOKING_API_LOGIN         panel API login (systemLogin)
+    IDOBOOKING_API_PASSWORD      panel API key (systemKey)
     IDOBOOKING_ADMIN_DOMAIN      default "client9681.idosell.com"
     IDOBOOKING_API_VERSION       default "36"
     IDOBOOKING_RESERVATION_STATUS  default "unconfirmed" — set to "waitingForPayment" to go live
@@ -83,7 +83,7 @@ async def create_reservation(req: BookRequest) -> dict:
     # Only notify the guest for a real (live) booking; a test reservation stays silent.
     notify = "y" if status == "waitingForPayment" else "n"
     payload = {
-        "authenticate": {"userLogin": login, "authenticateKey": key},
+        "authenticate": {"systemLogin": login, "systemKey": key},
         "params": {
             "reservations": [
                 {
@@ -128,8 +128,9 @@ async def create_reservation(req: BookRequest) -> dict:
         logger.warning("reservations/add call failed", exc_info=True)
         return {"ok": False, "message": f"Could not reach the booking system: {error}"}
 
-    # Success shape: {"reservations":[{"success":true,"reservationId":123,...}]}
-    rows = (body or {}).get("reservations") or []
+    # Responses are wrapped: {"result": {"reservations":[{"success":true,"reservationId":123}]}}
+    result = (body or {}).get("result", body) or {}
+    rows = result.get("reservations") or []
     row = rows[0] if rows else {}
     if row.get("success") and row.get("reservationId"):
         return {
@@ -148,7 +149,7 @@ async def cancel_reservation(reservation_id: int) -> dict:
         return {"ok": False, "configured": False}
     login, key = creds
     payload = {
-        "authenticate": {"userLogin": login, "authenticateKey": key},
+        "authenticate": {"systemLogin": login, "systemKey": key},
         "reservations": [{"reservationId": reservation_id, "status": "canceled", "notify": "n"}],
     }
     try:
@@ -157,7 +158,8 @@ async def cancel_reservation(reservation_id: int) -> dict:
             body = resp.json()
     except Exception as error:
         return {"ok": False, "message": str(error)}
-    rows = (body or {}).get("reservations") or []
+    result = (body or {}).get("result", body) or {}
+    rows = result.get("reservations") or []
     ok = bool(rows and rows[0].get("success"))
     return {"ok": ok, "raw": body}
 
