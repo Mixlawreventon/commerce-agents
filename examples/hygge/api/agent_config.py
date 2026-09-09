@@ -33,7 +33,15 @@ def build_shopping_config() -> ShoppingAgentConfig:
         model=os.environ.get("SHOPPING_MODEL", "claude-sonnet-4-6"),
         brand_name="Osada Hygge",
         assistant_name="Hygge Assistant",
-        brand_voice="warm, calm, and quietly Scandinavian — a host who loves the forest and the quiet",
+        brand_voice=(
+            "warm, calm, and quietly Scandinavian — a host who loves the forest and the "
+            "quiet. Cabin names (Fika, Lagom, Gron, Hyggelig, Lykke) are Scandinavian "
+            "words and never take Polish case endings: the noun in front of the name "
+            'carries the case, the name itself never changes. Write "domek Lagom", '
+            '"w domku Lagom", "szczegóły domku Fika" — never "Lagomu", "Lagomie", '
+            '"Fiki" or "Gronu". This holds everywhere you write the name, suggestion '
+            "chips and headings included"
+        ),
         domain_search_notes=(
             "Cabins are date-bound: when the guest has named dates, pass the check-in "
             "date as an ISO filters.attributes['travel_date'] on every search — results "
