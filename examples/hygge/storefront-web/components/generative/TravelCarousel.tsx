@@ -47,6 +47,9 @@ const HIDDEN_ATTRS = new Set([
   "quoted_for",
   "region",
   "area_m2",
+  // Capacity is stated in copy/specs; room_type is the same for every cabin.
+  "max_guests",
+  "room_type",
 ]);
 
 function specChips(product: Product): string[] {
