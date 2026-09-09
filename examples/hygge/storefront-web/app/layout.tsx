@@ -23,12 +23,13 @@ const archivo = Archivo({
 
 export const metadata: Metadata = {
   title: "Osada Hygge",
-  description: "Find and book a forest cabin with the Hygge Assistant.",
+  description: "Znajdź i zarezerwuj domek w lesie z Asystentem Hygge.",
+  icons: { icon: "/osada-hygge-mark.png" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${archivo.variable}`}>
+    <html lang="pl" className={`${fraunces.variable} ${archivo.variable}`}>
       <body>
         {/* Grain at z-1; content above it at z-2. */}
         <div className="al-grain" aria-hidden />

@@ -4,42 +4,48 @@
 "use client";
 
 import { useState } from "react";
-import { ArrivingPanel, estimateOf, Greeting, HomeSection, type Order, plural, type Starter, Starters, upcoming, useStoreFrame } from "web-shared";
+import { ArrivingPanel, Greeting, HomeSection, type Order, type Starter, Starters, useStoreFrame } from "web-shared";
+import { type Lang, t } from "@/lib/i18n";
 import { NOUNS, TripThumb } from "@/lib/orders";
+import { BODY, DISPLAY } from "../generative/shared";
 import { PostcardWindow } from "../PostcardWindow";
-
-const STARTERS: Starter[] = [
-  { icon: "calendar", prompt: "Find a cabin for next weekend" },
-  { icon: "plane", prompt: "A cabin with a jacuzzi on the terrace" },
-  { icon: "return", prompt: "Somewhere pet-friendly near the lake" },
-  { icon: "pin", prompt: "What's the status of my booking?" },
-];
 
 /** The keys of DESTINATION_GRADIENTS in lib/format.ts. */
 const POSTCARD_CITIES = ["Fika", "Lagom", "Gron", "Hyggelig", "Lykke"];
 
+/** Which cabins have the terrace SPA pool, from hot_tub in data/catalog.json. The postcards
+ * are named, not loaded from the catalog, so this list is named beside them for the same
+ * reason POSTCARD_IMAGES is: it is the one fact a guest scans this row for. */
+const POSTCARD_HOT_TUB = new Set(["Fika", "Lagom"]);
+
+/** Primary photo per cabin (idobooking); mirrors each cabin's image_url in data/catalog.json. */
+const POSTCARD_IMAGES: Record<string, string> = {
+  Fika: "https://client9681.idobooking.com/images/objects/pictures/large/2/1/104.jpg",
+  Lagom: "https://client9681.idobooking.com/images/objects/pictures/large/3/1/108.jpg",
+  Gron: "https://client9681.idobooking.com/images/objects/pictures/large/4/1/186.jpg",
+  Hyggelig: "https://client9681.idobooking.com/images/objects/pictures/large/5/1/166.jpg",
+  Lykke: "https://client9681.idobooking.com/images/objects/pictures/large/7/1/213.jpg",
+};
+
 /** Sends just before the 300ms mail animation ends. */
 const MAILING_MS = 260;
 
-const OPENER = "Tell me your dates and the Hygge Assistant finds the right forest cabin for your stay.";
-
-function Brief({ trips }: { trips: Order[] | null }) {
-  const open = trips ? upcoming(trips) : [];
-  if (!open.length) return <>{OPENER}</>;
-  const next = estimateOf(open[0])?.date;
-  return (
-    <>
-      {plural(open.length, "stay")} coming up{next ? `; the next starts ${next}` : ""}. {OPENER}
-    </>
-  );
+function starters(lang: Lang, light: boolean): Starter[] {
+  return [
+    { icon: "calendar", prompt: t(lang, "starterWeekend") },
+    { icon: "plane", prompt: t(lang, "starterJacuzzi") },
+    { icon: "return", prompt: t(lang, "starterPets") },
+    // Light mode has no stays to look up, so it offers the packages instead.
+    { icon: "pin", prompt: t(lang, light ? "starterPackages" : "starterBooking") },
+  ];
 }
 
-function Postcards() {
+function Postcards({ lang }: { lang: Lang }) {
   const { ask, chat } = useStoreFrame();
   const [mailingCity, setMailingCity] = useState<string | null>(null);
   const disabled = !chat || chat.busy || !chat.ready;
   const planTrip = (city: string) => {
-    const request = () => ask(`Tell me about the ${city} cabin`);
+    const request = () => ask(t(lang, "askCabin", { city }));
     // Reduced motion, or a card already on its way, sends at once.
     if (mailingCity || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       request();
@@ -59,7 +65,7 @@ function Postcards() {
           type="button"
           onClick={() => planTrip(city)}
           disabled={disabled}
-          aria-label={`Explore the ${city} cabin`}
+          aria-label={t(lang, "askCabin", { city })}
           className="al-reveal-item"
           style={{ animationDelay: `${(index + 4) * 60}ms` }}
         >
@@ -69,30 +75,44 @@ function Postcards() {
               index % 2 ? "al-postcard-rest al-postcard-rest--alt" : "al-postcard-rest"
             } ${mailingCity === city ? "al-postcard-mailing" : ""}`}
           >
-            <PostcardWindow city={city} title={city} className="aspect-[4/3] w-full" />
+            <PostcardWindow city={city} title={city} showLabel={false} imageUrl={POSTCARD_IMAGES[city]} className="aspect-[4/3] w-full" />
           </div>
+          {/* Named under the photo, with the one feature that decides the choice for most
+              guests, so the row can be scanned rather than opened cabin by cabin. */}
+          <span className="mt-1 flex flex-col items-start leading-tight">
+            <span style={{ fontFamily: DISPLAY, fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>
+              {city}
+            </span>
+            {POSTCARD_HOT_TUB.has(city) ? (
+              <span style={{ fontFamily: BODY, fontSize: 11, color: "var(--accent)" }}>
+                jacuzzi na tarasie
+              </span>
+            ) : null}
+          </span>
         </button>
       ))}
     </div>
   );
 }
 
-export default function HomeView({ travelerName, trips, tripsFailed, onSeeTrips }: { travelerName: string; trips: Order[] | null; tripsFailed: boolean; onSeeTrips: () => void }) {
+export default function HomeView({ lang, travelerName, trips, tripsFailed, onSeeTrips, light = false }: { lang: Lang; travelerName: string; trips: Order[] | null; tripsFailed: boolean; onSeeTrips: () => void; light?: boolean }) {
   return (
     <div className="flex flex-col gap-4">
-      <Greeting
-        title={
-          <h1 className="al-hero">
-            Ready to unwind, <em>{travelerName}</em>?
-          </h1>
-        }
-      >
-        <Brief trips={trips} />
+      <Greeting title={<h1 className="al-hero">{light ? t(lang, "heroTitleAnon") : t(lang, "heroTitle", { name: travelerName })}</h1>}>
+        {t(lang, "opener")}
       </Greeting>
-      <Starters items={STARTERS} />
-      <ArrivingPanel orders={trips} failed={tripsFailed} nouns={NOUNS} thumb={(order) => <TripThumb order={order} />} onSeeAll={onSeeTrips} />
-      <HomeSection title="Start from a cabin" subtitle="Pick one and the Hygge Assistant tells you about it">
-        <Postcards />
+      <Starters items={starters(lang, light)} />
+      {/* Recording guests' words is only fair if they are told, where they start typing. */}
+      {light ? (
+        <p className="text-[12px]" style={{ color: "var(--ink-soft)" }}>
+          {t(lang, "privacyNote")}
+        </p>
+      ) : null}
+      {light ? null : (
+        <ArrivingPanel orders={trips} failed={tripsFailed} nouns={NOUNS} thumb={(order) => <TripThumb order={order} />} onSeeAll={onSeeTrips} />
+      )}
+      <HomeSection title={t(lang, "sectionTitle")} subtitle={t(lang, "sectionSubtitle")}>
+        <Postcards lang={lang} />
       </HomeSection>
     </div>
   );

@@ -33,6 +33,8 @@ examples = [
   "fastapi>=0.132",
   "uvicorn>=0.30",
   "python-dotenv>=1.0",
+  # Only demo_common.analytics uses it, and only when DATABASE_URL is set.
+  "asyncpg>=0.30",
 ]
 
 [tool.hatch.build.targets.wheel]

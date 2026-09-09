@@ -85,7 +85,10 @@ def spawn_background(coro: Coroutine[Any, Any, object]) -> None:
     task.add_done_callback(_background_tasks.discard)
 
 
-def _lifespan(on_startup: Sequence[Callable[[], Awaitable[None]]]):
+def _lifespan(
+    on_startup: Sequence[Callable[[], Awaitable[None]]],
+    on_shutdown: Sequence[Callable[[], Awaitable[None]]] = (),
+):
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         if not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
@@ -96,16 +99,25 @@ def _lifespan(on_startup: Sequence[Callable[[], Awaitable[None]]]):
             )
         for step in on_startup:
             await step()
-        yield
+        try:
+            yield
+        finally:
+            for step in on_shutdown:
+                await step()
 
     return lifespan
 
 
-def build_app(title: str, on_startup: Sequence[Callable[[], Awaitable[None]]] = ()) -> FastAPI:
+def build_app(
+    title: str,
+    on_startup: Sequence[Callable[[], Awaitable[None]]] = (),
+    on_shutdown: Sequence[Callable[[], Awaitable[None]]] = (),
+) -> FastAPI:
     """A FastAPI app that answers only to loopback host names (plus ``DEMO_ALLOWED_HOSTS``,
     for a deployment that puts its own authentication in front) and to any localhost
-    origin (plus the exact origins in ``DEMO_ALLOWED_ORIGINS``, for a deployment whose web
-    app is served from another host). Rejecting other Host headers stops DNS-rebinding,
+    origin (plus the exact origins in ``DEMO_ALLOWED_ORIGINS`` and any matching
+    ``DEMO_ALLOWED_ORIGIN_REGEX``, for a deployment whose web app is served from another
+    host, or from a fresh one on every deploy). Rejecting other Host headers stops DNS-rebinding,
     which CORS does not. Logs go to stderr at ``DEMO_LOG_LEVEL``: ``INFO`` is a line per
     model call, ``DEBUG`` adds the bodies."""
     logging.basicConfig(
@@ -123,7 +135,16 @@ def build_app(title: str, on_startup: Sequence[Callable[[], Awaitable[None]]] = 
         for origin in os.environ.get("DEMO_ALLOWED_ORIGINS", "").split(",")
         if origin.strip()
     ]
-    app = FastAPI(title=title, version="0.1.0", lifespan=_lifespan(on_startup))
+    # A web app that gets a fresh host on every deploy (a preview URL) cannot be listed
+    # origin by origin, so a deployment may add one pattern, OR-ed with the localhost one.
+    # Keep it anchored to hosts the deployment owns: the regex must match the whole origin,
+    # so a pattern ending in a bare ".vercel.app" would admit anyone's deployment there.
+    origin_regex = r"http://(localhost|127\.0\.0\.1):\d+"
+    if extra_regex := os.environ.get("DEMO_ALLOWED_ORIGIN_REGEX", "").strip():
+        origin_regex = f"({origin_regex})|({extra_regex})"
+    # These run through the lifespan, not app.on_event: Starlette ignores a router's
+    # startup and shutdown handlers entirely once a lifespan is given.
+    app = FastAPI(title=title, version="0.1.0", lifespan=_lifespan(on_startup, on_shutdown))
     app.add_middleware(
         TrustedHostMiddleware,
         allowed_hosts=["localhost", "127.0.0.1", *(host for host in extra_hosts if host)],
@@ -131,7 +152,7 @@ def build_app(title: str, on_startup: Sequence[Callable[[], Awaitable[None]]] = 
     app.add_middleware(
         CORSMiddleware,
         allow_origins=extra_origins,
-        allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
+        allow_origin_regex=origin_regex,
         allow_methods=["*"],
         allow_headers=["*"],
     )
@@ -169,17 +190,22 @@ def stream_turn(
     session: Any,
     *,
     env_hint: str,
+    observer: Callable[[AgentEvent], None] | None = None,
 ) -> StreamingResponse:
     """Stream one turn as SSE; the record is written back once the stream has ended (the
     request dependency wrote back before it began). Credential failures become a readable
     error event naming ``env_hint`` (the example's ``.env`` path); anything else is logged
-    and reported generically. Memory extraction runs after the response has streamed."""
+    and reported generically. Memory extraction runs after the response has streamed.
+    ``observer`` sees each event as it goes out, for a deployment recording its own
+    traffic; it is called inside the stream, so it must not block and must not raise."""
 
     async def event_stream() -> AsyncIterator[str]:
         try:
             async for event in agent.stream_turn(record.messages, session, record.state):
                 if event.type == "turn_complete" and event.data.get("results_cleared"):
                     record.stored_messages = 0  # earlier messages changed: rewrite the transcript
+                if observer is not None:
+                    observer(event)
                 yield to_sse(event)
         except anthropic.AuthenticationError:
             logger.exception("chat turn failed: API authentication")

@@ -43,9 +43,9 @@ export function productPlace(product: Product): string | undefined {
 
 // per_traveler folds into "/ person" so mixed data renders one unit.
 const PRICE_UNIT_LABELS: Record<string, string> = {
-  per_night: "/ night",
-  per_person: "/ person",
-  per_traveler: "/ person",
+  per_night: "za noc",
+  per_person: "za osobę",
+  per_traveler: "za osobę",
 };
 
 export function priceUnitLabel(unit?: string | null): string | null {

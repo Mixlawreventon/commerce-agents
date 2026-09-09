@@ -141,9 +141,9 @@ function ratePosition(price: number, band?: string): RatePosition | null {
 }
 
 const RATE_POSITION_LABELS: Record<RatePosition["position"], string> = {
-  lower: "Lower than typical",
-  typical: "Typical rate",
-  higher: "Above typical",
+  lower: "Poniżej zwykłej ceny",
+  typical: "Zwykła cena",
+  higher: "Powyżej zwykłej ceny",
 };
 
 export function RateGauge({ price, band }: { price: number; band?: string }) {
@@ -237,6 +237,8 @@ export function MiniProductCard({ product }: { product: Product }) {
       <PostcardWindow
         city={productPlace(product)}
         title={product.title}
+        imageUrl={product.image_url}
+        showLabel={false}
         className="h-[60px] w-[96px] shrink-0 overflow-hidden rounded-lg"
       />
       <div className="min-w-0">

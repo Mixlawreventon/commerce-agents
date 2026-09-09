@@ -6,6 +6,9 @@ storefront web app calls.
 
     POST   /api/session               bind a session to a demo profile, return its id and name
     POST   /api/chat                  one turn, streamed as SSE AgentEvents
+    POST   /api/feedback              a guest's verdict on one reply
+    POST   /api/click                 a hand-off the guest followed
+    GET    /api/admin/stats|conversations   the recorded traffic (ADMIN_TOKEN)
     GET    /api/products[/{id}]       catalog reads (public)
     GET    /api/cart                  the session's cart
     GET    /api/orders                the session user's orders, newest first
@@ -21,12 +24,15 @@ dependency, and mounts a direct add-to-cart button through ``StorefrontHost.dire
 # Route parameters below are annotated with dependencies built at call time, so this
 # module evaluates its annotations eagerly (no ``from __future__ import annotations``).
 
+import logging
+import os
+import secrets
 from collections.abc import Awaitable, Callable, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, cast
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -37,10 +43,13 @@ from shopping_agent.gates import OPTIONS_GATE, PROVENANCE_GATE
 from shopping_agent.serialization import cart_payload as serialize_cart
 from shopping_agent_runtime import ShoppingAgent
 
+from .analytics import EventLog
 from .host import DemoStorefront, append_user_turn, build_app, stream_turn
 from .memory import MemoryFactEdit, MemorySeeder, install_memory_routes
 from .sessions import SessionRecord, SessionStore, session_dependency
 from .storefront_fixtures import SUMMARY_EXCLUDES
+
+logger = logging.getLogger(__name__)
 
 StorefrontRecord = SessionRecord[ShoppingSessionState]
 
@@ -56,9 +65,32 @@ class StartSessionRequest(BaseModel):
     user_id: str = Field(default="demo-user", min_length=1, max_length=64)
 
 
+class FeedbackRequest(BaseModel):
+    """What a guest said about one reply. ``message_index`` is that reply's position in the
+    rendered conversation, so a row can be read back against the transcript."""
+
+    verdict: Literal["up", "down"]
+    message_index: int = Field(ge=0)
+    reason: str | None = Field(default=None, max_length=2000)
+
+
+class ClickRequest(BaseModel):
+    """A guest leaving for somewhere the store handed them off to. ``target`` is a closed
+    set: an endpoint that writes a row per free-text name is a way to fill the table."""
+
+    target: Literal["booking"]
+    product_id: str = Field(max_length=64)
+
+
+# The languages the storefront UI can request the assistant reply in.
+_LANGUAGE_NAMES = {"pl": "Polish", "en": "English", "de": "German"}
+
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     page: PageContext | None = None
+    # BCP-47-ish language code the UI is set to; the assistant is asked to reply in it.
+    language: str | None = Field(default=None, max_length=8)
 
 
 class CartAddRequest(BaseModel):
@@ -86,7 +118,10 @@ class StorefrontHost:
         cart_extras: Callable[[StorefrontRecord], dict[str, Any]] | None,
         on_startup: Sequence[Callable[[], Awaitable[None]]] = (),
     ) -> None:
-        self.app = build_app(title, on_startup)
+        # Off unless DATABASE_URL names a Postgres; see analytics.EventLog. Built before
+        # the app so its pool opens inside the running loop, with the other startup steps.
+        self.events = EventLog()
+        self.app = build_app(title, [*on_startup, self.events.open], [self.events.close])
         self.backend = backend
         self.agent = agent
         self.memory_store = cast(MemoryStore, agent.memory.store)
@@ -109,14 +144,73 @@ class StorefrontHost:
         )
 
     def chat(self, request: ChatRequest, record: StorefrontRecord) -> StreamingResponse:
-        append_user_turn(record, request.message, "App events")
+        message = request.message
+        # When the UI names a language, prepend a directive so the reply matches it even
+        # when the customer's message is in another language (place names, product ids).
+        language = _LANGUAGE_NAMES.get((request.language or "").lower())
+        if language:
+            message = (
+                f"[Reply in {language}, regardless of the language of this message. "
+                f"Write dates, month names and weekdays in {language} too.]\n{message}"
+            )
+        append_user_turn(record, message, "App events")
+        self.events.record(
+            "message",
+            session_id=record.session_id,
+            user_id=record.user_id,
+            role="guest",
+            text=request.message,
+            language=request.language,
+        )
         return stream_turn(
             self.agent,
             self.sessions,
             record,
             self.context(record, request.page),
             env_hint=self._env_hint,
+            observer=self._turn_observer(record),
         )
+
+    def _turn_observer(self, record: StorefrontRecord) -> Callable[[Any], None]:
+        """Collects a turn's reply as it streams and records it once the turn ends, so the
+        log holds whole answers rather than a row per token. Searches are recorded as they
+        happen: one that found nothing is the most useful row in the table."""
+        reply: list[str] = []
+
+        def observe(event: Any) -> None:
+            try:
+                if event.type == "text_delta":
+                    reply.append(str(event.data.get("text", "")))
+                elif event.type == "tool_call":
+                    self.events.record(
+                        "tool_call",
+                        session_id=record.session_id,
+                        user_id=record.user_id,
+                        tool=event.data.get("tool"),
+                        arguments=event.data.get("input"),
+                    )
+                elif event.type == "error":
+                    self.events.record(
+                        "error",
+                        session_id=record.session_id,
+                        user_id=record.user_id,
+                        message=event.data.get("message"),
+                    )
+                elif event.type == "turn_complete":
+                    text = "".join(reply).strip()
+                    reply.clear()
+                    if text:
+                        self.events.record(
+                            "message",
+                            session_id=record.session_id,
+                            user_id=record.user_id,
+                            role="assistant",
+                            text=text,
+                        )
+            except Exception:  # recording must never break the turn it is watching
+                logger.warning("could not observe a turn event", exc_info=True)
+
+        return observe
 
     async def cart_payload(self, record: StorefrontRecord) -> dict[str, Any]:
         cart = await self.backend.get_cart(self.context(record))
@@ -193,6 +287,7 @@ def build_storefront_host(
     async def start_session(request: StartSessionRequest | None = None) -> dict:
         record = host.sessions.start((request or StartSessionRequest()).user_id)
         profile = await backend.get_preferences(host.context(record))
+        host.events.record("session_start", session_id=record.session_id, user_id=record.user_id)
         return {
             "session_id": record.session_id,
             "user_id": record.user_id,
@@ -204,6 +299,52 @@ def build_storefront_host(
     @app.post("/api/chat", dependencies=[Depends(before_turn)] if before_turn else [])
     async def chat(request: ChatRequest, record: CurrentSession) -> StreamingResponse:
         return host.chat(request, record)
+
+    @app.post("/api/feedback")
+    async def leave_feedback(request: FeedbackRequest, record: CurrentSession) -> dict:
+        """A guest's verdict on one reply. Recorded whether or not the log is on, so the
+        button behaves the same in the examples as on a deployment that keeps the rows."""
+        host.events.record(
+            "feedback",
+            session_id=record.session_id,
+            user_id=record.user_id,
+            verdict=request.verdict,
+            message_index=request.message_index,
+            reason=request.reason,
+        )
+        return {"recorded": True}
+
+    @app.post("/api/click")
+    async def record_click(request: ClickRequest, record: CurrentSession) -> dict:
+        """A hand-off the guest followed. The destination carries campaign tags for its own
+        analytics; this row is the store's side of the same click."""
+        host.events.record(
+            "click",
+            session_id=record.session_id,
+            user_id=record.user_id,
+            target=request.target,
+            product_id=request.product_id,
+        )
+        return {"recorded": True}
+
+    def _admin(authorization: str = Header(default="")) -> None:
+        """Guards the routes that read guests' words back. Unset ``ADMIN_TOKEN`` means the
+        routes answer 404: an example must not ship a readable transcript store, and a
+        deployment that forgot to set a token must not quietly serve one either."""
+        token = os.environ.get("ADMIN_TOKEN", "").strip()
+        if not token:
+            raise HTTPException(status_code=404, detail="Not Found")
+        offered = authorization.removeprefix("Bearer ").strip()
+        if not secrets.compare_digest(offered, token):
+            raise HTTPException(status_code=401, detail="Bad or missing admin token")
+
+    @app.get("/api/admin/stats", dependencies=[Depends(_admin)])
+    async def admin_stats(days: int = 30) -> dict:
+        return await host.events.summary(days)
+
+    @app.get("/api/admin/conversations", dependencies=[Depends(_admin)])
+    async def admin_conversations(limit: int = 20) -> dict:
+        return {"conversations": await host.events.conversations(limit)}
 
     @app.get("/api/products")
     async def list_products(category: str | None = None, limit: int = 24) -> dict:

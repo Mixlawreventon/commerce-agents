@@ -4,6 +4,7 @@
 "use client";
 
 import { AskLink, BagPanel, CheckoutButton, plural, RemoveLink, Stepper, TotalRow, useCatalogIndex, useStoreFrame } from "web-shared";
+import { bagCount, DEFAULT_LANG, type Lang, t } from "@/lib/i18n";
 import { fetchProducts } from "@/lib/api";
 import { formatPrice, productCity, productPlace, quantityLabel, shortDate } from "@/lib/format";
 import type { CartItem, CartPayload, Product } from "@/lib/types";
@@ -113,10 +114,15 @@ export default function TripPanel({
   cart,
   checkoutStaged = false,
   productIndex,
+  lang = DEFAULT_LANG,
+  light = false,
 }: {
   cart: CartPayload | null;
   checkoutStaged?: boolean;
   productIndex?: Record<string, Product>;
+  lang?: Lang;
+  /** Light mode has no checkout: booking is not the flow being tested yet. */
+  light?: boolean;
 }) {
   const catalog = useCatalogIndex(fetchProducts);
   const index = productIndex ?? catalog;
@@ -125,23 +131,28 @@ export default function TripPanel({
   const count = items.length;
   return (
     <BagPanel
-      title="Trip"
-      count={plural(count, "booking")}
+      title={t(lang, "bagTitle")}
+      count={bagCount(lang, count)}
       isEmpty={count === 0}
       empty={
         <>
-          Nothing booked yet.
-          <br />
-          Ask ACME Assistant where to go.
+          {t(lang, "bagEmpty")
+            .split("\n")
+            .map((line, index) => (
+              <span key={line}>
+                {index > 0 ? <br /> : null}
+                {line}
+              </span>
+            ))}
         </>
       }
       footer={
         <>
-          <TotalRow label="Trip total" value={formatPrice(cart?.subtotal ?? 0)} note={count ? "All-in; nothing is charged until you check out." : undefined} />
-          <CheckoutButton staged={checkoutStaged} disabled={count === 0} prompt="Check out my trip." />
+          <TotalRow label={t(lang, "bagTotal")} value={formatPrice(cart?.subtotal ?? 0)} note={count ? t(lang, "bagTotalNote") : undefined} />
+          {light ? null : <CheckoutButton staged={checkoutStaged} disabled={count === 0} prompt="Check out my trip." />}
           {count ? (
             <div className="mt-2.5 flex justify-center">
-              <AskLink label="Ask about this trip" prompt="Look over my trip: anything missing or worth changing?" />
+              <AskLink label={t(lang, "bagAsk")} prompt="Look over my trip: anything missing or worth changing?" />
             </div>
           ) : null}
         </>

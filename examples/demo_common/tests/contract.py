@@ -44,6 +44,10 @@ STOREFRONT_PUBLIC = {
     "/api/health",
 }
 MERCHANT_PUBLIC = {"/api/merchant/session", "/api/merchant/health"}
+# The third category: guarded by ADMIN_TOKEN rather than by a session, because they read
+# recorded traffic back rather than one caller's own data. With no token configured they
+# answer 404, so an example never serves a readable transcript store.
+ADMIN_ROUTES = {"/api/admin/stats", "/api/admin/conversations"}
 LOOPBACK = ("127.0.0.1", 12345)
 
 
@@ -137,7 +141,7 @@ def test_no_route_reads_identity_from_the_request(main):
 def test_public_route_sets_are_closed_and_each_role_has_its_own_token_store(
     main, extra_public_routes
 ):
-    routes = _routes(main.app)
+    routes = [r for r in _routes(main.app) if r.path not in ADMIN_ROUTES]
     storefront = [r for r in routes if not r.path.startswith("/api/merchant")]
     portal = [r for r in routes if r.path.startswith("/api/merchant")]
     assert {r.path for r in storefront if _dependency_of(r) is None} == (
@@ -158,8 +162,21 @@ def test_every_scoped_route_refuses_a_missing_or_unknown_token(main, client):
             continue
         path = re.sub(r"\{[^}]+\}", "x", route.path)
         for method in route.methods:
+            if route.path in ADMIN_ROUTES:
+                # No ADMIN_TOKEN in the tests, so the route is not there to be called.
+                assert client.request(method, path).status_code == 404, (method, path)
+                continue
             assert client.request(method, path, json={}).status_code == 401, (method, path)
             assert client.request(method, path, json={}, headers=made_up).status_code == 401
+
+
+def test_admin_routes_open_only_to_the_configured_token(main, client, monkeypatch):
+    monkeypatch.setenv("ADMIN_TOKEN", "a-token")
+    for path in sorted(ADMIN_ROUTES):
+        assert client.get(path).status_code == 401, path
+        assert client.get(path, headers={"Authorization": "Bearer wrong"}).status_code == 401
+        # The right token is served; with no database behind it the answer is simply empty.
+        assert client.get(path, headers={"Authorization": "Bearer a-token"}).status_code == 200
 
 
 def test_storefront_session_binds_the_profile_and_reset_reissues_it(main, client):

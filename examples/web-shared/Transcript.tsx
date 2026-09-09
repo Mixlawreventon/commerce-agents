@@ -16,6 +16,8 @@ export interface TranscriptProps {
   /** Defaults to `ActivityLine`. */
   renderPending?: (item: AssistantChatItem) => ReactNode;
   suggestionFilter?: (text: string) => boolean;
+  /** Under a reply once it is complete — where a deployment puts its own controls. */
+  renderFooter?: (item: AssistantChatItem, index: number) => ReactNode;
   /** Components that may extend past the text measure when the page has room. */
   wide?: ReadonlySet<string>;
   gap?: string;
@@ -47,6 +49,7 @@ export function Transcript({
   renderBlock,
   renderPending = (item) => <ActivityLine item={item} />,
   suggestionFilter,
+  renderFooter,
   wide,
   gap = "gap-3",
 }: TranscriptProps) {
@@ -74,6 +77,7 @@ export function Transcript({
           );
         })}
         {item.pending ? renderPending(item) : null}
+        {!item.pending && renderFooter ? renderFooter(item, index) : null}
         {!item.pending && index === items.length - 1 ? (
           <Suggestions
             suggestions={suggestionFilter ? item.suggestions.filter(suggestionFilter) : item.suggestions}

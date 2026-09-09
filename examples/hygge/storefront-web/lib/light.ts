@@ -1,0 +1,40 @@
+// Copyright 2026 Anthropic PBC
+// SPDX-License-Identifier: Apache-2.0
+
+/**
+ * The trimmed storefront put in front of real guests while the rest is still being built.
+ *
+ * Light mode drops the parts of the example that only make sense with the demo's seeded
+ * data or its unfinished booking path: the seeded shopper's name, the stays history (its
+ * tab and the arriving panel), and checkout. Nothing is deleted — the full example runs
+ * whenever the flag is off, which is the default.
+ *
+ * Set `NEXT_PUBLIC_LIGHT_UI=1` on the deployment to turn it on. It is read at build time,
+ * so changing it needs a rebuild.
+ */
+// Trimmed: a value set from a shell pipe easily carries a trailing newline, and a flag
+// that silently reads as off is worse than one that is forgiving about whitespace.
+export const LIGHT_UI = process.env.NEXT_PUBLIC_LIGHT_UI?.trim() === "1";
+
+const GUEST_KEY = "hygge-guest";
+
+/**
+ * A per-browser profile id for light mode. The example's default session binds to the
+ * seeded demo profile, so a real guest would be greeted as her and answered from her
+ * remembered facts — a partner, a dog. An id the fixtures do not carry gets a clean guest
+ * profile with no orders and no memory, and giving each browser its own keeps one
+ * visitor's remembered facts away from the next.
+ */
+export function guestProfileId(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const stored = window.localStorage.getItem(GUEST_KEY);
+    if (stored) return stored;
+    const id = `guest-${crypto.randomUUID()}`;
+    window.localStorage.setItem(GUEST_KEY, id);
+    return id;
+  } catch {
+    // Storage blocked: still anonymous, just not the same id on the next visit.
+    return `guest-${crypto.randomUUID()}`;
+  }
+}

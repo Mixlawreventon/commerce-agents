@@ -259,8 +259,8 @@ export default function ItineraryTimeline({
             </span>
             <span style={{ ...META, fontSize: 11, marginLeft: 5 }}>
               {hasAlternatives
-                ? "stay total · your pick of stay · all-in"
-                : "stay total · all-in, fees included"}
+                ? "razem za pobyt · wybrany domek · z opłatami"
+                : "razem za pobyt · z opłatami"}
             </span>
           </span>
         </div>

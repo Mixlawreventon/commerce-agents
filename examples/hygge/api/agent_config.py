@@ -33,12 +33,45 @@ def build_shopping_config() -> ShoppingAgentConfig:
         model=os.environ.get("SHOPPING_MODEL", "claude-sonnet-4-6"),
         brand_name="Osada Hygge",
         assistant_name="Hygge Assistant",
-        brand_voice="warm, calm, and quietly Scandinavian — a host who loves the forest and the quiet",
+        brand_voice=(
+            "warm, calm, and quietly Scandinavian — a host who loves the forest and the "
+            "quiet. Cabin names (Fika, Lagom, Gron, Hyggelig, Lykke) are Scandinavian "
+            "words and never take Polish case endings: the noun in front of the name "
+            'carries the case, the name itself never changes. Write "domek Lagom", '
+            '"w domku Lagom", "szczegóły domku Fika" — never "Lagomu", "Lagomie", '
+            '"Fiki" or "Gronu". This holds everywhere you write the name, suggestion '
+            "chips and headings included"
+        ),
         domain_search_notes=(
-            "Cabins are date-bound: when the guest has named dates, pass the check-in "
-            "date as an ISO filters.attributes['travel_date'] on every search — results "
-            "and prices are quotes for those nights, not catalog constants. Prices are "
-            "per night in Polish zloty (PLN)."
+            "Search before you ask. A guest who has named nothing still gets cabins and "
+            "real dates back, so show something first and gather the details around it; "
+            "an opening question with no cabins on screen is work handed to the guest. "
+            "Quote for two people unless told otherwise, say that is what you quoted, and "
+            "ask the party size afterwards — it changes both the cabins and the price, so "
+            "search again once you know it. "
+            "Cabins are date-bound: when the guest has named dates, pass the check-in date "
+            "as an ISO filters.attributes['travel_date'] on every search — results and "
+            "prices are quotes for those nights, not catalog constants. Prices are per "
+            "night in Polish zloty (PLN). Pass the number of nights the guest asked for as "
+            "filters.attributes['nights'] — the longer packages only apply from three "
+            "nights up, so a stay quoted short misses the discount it has earned. Pass the "
+            "head count as filters.attributes['guests']: a child counts the same as an "
+            "adult, except a baby under one year sleeping with its parents, who is not "
+            "counted at all. "
+            "Weekends fill first, so a guest who names one often finds it gone. Results "
+            "carry free_weekends (with how many cabins are left) and free_midweek, both "
+            "real dates from the calendar. When the guest says 'weekend' or names no dates "
+            "at all, name those dates in your reply — never answer a weekend request "
+            "without saying which weekends are still open, and say plainly when one is "
+            "down to its last cabin. Offer midweek as the roomier alternative. "
+            "Packages for longer stays are live data, not policy: when a guest asks about "
+            "discounts, promotions, or offers, search rather than answering from what you "
+            "already hold — the results name the packages currently on and what a longer "
+            "stay would earn. Never tell a guest there are none without having searched. "
+            "A dated search marks cabins that are taken for those nights as out of stock "
+            "rather than hiding them: say they are booked and offer other dates. Never "
+            "conclude from a search that Osada Hygge lacks a cabin or a feature — the "
+            "five cabins and what they have are constant, only the free nights change."
         ),
     )
 

@@ -14,12 +14,14 @@ export function Chat({
   home,
   renderBlock,
   renderPending,
+  renderFooter,
   wide,
 }: {
   chat: AgentTurn;
   home: ReactNode;
   renderBlock: TranscriptProps["renderBlock"];
   renderPending?: TranscriptProps["renderPending"];
+  renderFooter?: TranscriptProps["renderFooter"];
   /** Components that may extend past the text measure when the page has room. */
   wide?: ReadonlySet<string>;
 }) {
@@ -31,7 +33,7 @@ export function Chat({
           {chat.items.length === 0 ? (
             home
           ) : (
-            <Transcript items={chat.items} busy={chat.busy} send={chat.send} renderBlock={renderBlock} renderPending={renderPending} wide={wide} />
+            <Transcript items={chat.items} busy={chat.busy} send={chat.send} renderBlock={renderBlock} renderPending={renderPending} renderFooter={renderFooter} wide={wide} />
           )}
         </div>
       </div>

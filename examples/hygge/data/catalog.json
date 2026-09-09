@@ -1,11 +1,11 @@
 {
-  "_comment": "availability_from and availability_to are shifted forward by whole weeks at load time, relative to dates_anchored_to (shift_availability in api/mock_hygge.py); merchant_occupancy.json shifts the same way. Author the dates as if dates_anchored_to were today. Prices are per night in PLN; the five cabins mirror Osada Hygge's real lineup (Fika, Lagom, Gron, Hyggelig, Lykke).",
+  "_comment": "availability_from/availability_to are shifted forward by whole weeks at load time relative to dates_anchored_to. Prices are per night in PLN. Capacity, bed layout and amenities are the real per-cabin facts from hyggeosada.pl (Fika/Lagom/Gron/Hyggelig sleep up to 6, Lykke up to 5). Live price/photos/booking_url are overlaid at runtime from the idobooking middleware; specs/attributes here are the authoritative structured data. Descriptions are Polish; the assistant answers in the guest's language.",
   "dates_anchored_to": "2026-09-07",
   "store_name": "Osada Hygge",
   "products": [
     {
       "product_id": "HY-FIKA",
-      "title": "Domek Fika — jacuzzi na tarasie",
+      "title": "Domek Fika — basen SPA na tarasie",
       "brand": "Osada Hygge",
       "price": 649.0,
       "currency": "PLN",
@@ -13,21 +13,21 @@
       "review_count": 214,
       "image_url": "https://client9681.idobooking.com/images/objects/pictures/large/2/1/104.jpg",
       "category": "cabins",
-      "labels": ["Jacuzzi na tarasie", "Ulubieniec gości"],
-      "attributes": {"city": "Osada Hygge", "region": "Gostyninsko-Wloclawski Park Krajobrazowy", "room_type": "cały domek", "hot_tub": "yes", "sauna": "no", "pets_allowed": "yes", "breakfast_included": "no", "refundable": "yes", "typical_rate_band": "649-829", "price_unit": "per_night", "availability_from": "2026-06-01", "availability_to": "2027-03-31"},
+      "labels": ["Basen SPA na tarasie", "Do 6 osób", "Ulubieniec gości"],
+      "attributes": {"city": "Osada Hygge", "region": "Gostyninsko-Wloclawski Park Krajobrazowy", "room_type": "cały domek", "max_guests": "6", "hot_tub": "tak", "air_conditioning": "tak", "pets_allowed": "tak", "breakfast_included": "nie", "refundable": "yes", "typical_rate_band": "649-829", "price_unit": "per_night", "availability_from": "2026-06-01", "availability_to": "2027-03-31"},
       "in_stock": true,
-      "short_description": "Fika means coffee in Swedish — a bright cabin with black accents and a private jacuzzi on the terrace, steps from the forest and lake.",
-      "long_description": "Fika is the light-and-graphite one: warm oak floors, black steel details, floor-to-ceiling glass onto the pines, and a wood-fired jacuzzi on its own terrace. Fifty-six square metres sleep four in comfort — a downstairs bedroom and a snug mezzanine — with a full kitchen, underfloor heating, and a Smart TV for the slow evenings. The published rate is fully refundable up to 48 hours before arrival. Out the door: the Gostynin–Wloclawek forest for cycling and the lake a short walk away.",
-      "specs": {"sleeps": "4", "beds": "1 double + mezzanine", "size": "56 sqm", "view": "forest", "hot_tub": "private, on the terrace", "wifi": "free, whole cabin", "parking": "free, by the cabin"},
+      "short_description": "Fika po szwedzku znaczy kawa — jasny domek z czarnymi akcentami i prywatnym basenem SPA na tarasie, dla maks. 6 osób, tuż obok lasu i jeziora.",
+      "long_description": "Fika to ten jasny, z grafitowymi detalami: ciepłe dębowe podłogi, czarna stal, przeszklenia z widokiem na sosny i basen SPA (jacuzzi) na własnym tarasie. Dwie sypialnie na piętrze mieszczą wygodnie do sześciu osób. W pełni wyposażona kuchnia, klimatyzacja w sypialniach i salonie, ogrzewanie podłogowe, szybki internet Starlink i taras z grillem. Do dyspozycji gości rowery (także z fotelikami dla dzieci), akcesoria dla najmłodszych, a na terenie Osady basen letni, plac zabaw i spacery z alpakami. Cena jest w pełni zwrotna do 7 dni przed przyjazdem.",
+      "specs": {"osoby": "do 6", "sypialnie": "2 na piętrze", "powierzchnia": "56 m²", "jacuzzi": "prywatny basen SPA na tarasie", "klimatyzacja": "w sypialniach i salonie", "ogrzewanie": "podłogowe i ścienne", "internet": "Starlink (satelitarny)", "kuchnia": "w pełni wyposażona (indukcja, lodówka, zmywarka, mikrofala, kawiarka, czajnik; air-fryer na życzenie)", "taras": "z grillem", "dla_dzieci": "łóżeczko, krzesełko, bramki na schody, foteliki rowerowe", "rowery": "dla gości", "na_terenie_osady": "basen letni, plac zabaw, spacery z alpakami, ogrodzony teren", "parking": "bezpłatny, przy domku"},
       "review_highlights": [
-        "The terrace jacuzzi under the trees at dusk is the whole trip",
-        "Spotless, design-magazine pretty, and warm even on a cold weekend",
-        "Perfect forest quiet — we slept better here than we have in months"
+        "Basen SPA na tarasie wśród drzew o zmierzchu to sedno całego pobytu",
+        "Czyściutko, jak z magazynu wnętrzarskiego, i ciepło nawet w chłodny weekend",
+        "Idealna leśna cisza — spaliśmy lepiej niż od miesięcy"
       ]
     },
     {
       "product_id": "HY-LAGOM",
-      "title": "Domek Lagom — jacuzzi na tarasie",
+      "title": "Domek Lagom — basen SPA na tarasie",
       "brand": "Osada Hygge",
       "price": 649.0,
       "currency": "PLN",
@@ -35,16 +35,16 @@
       "review_count": 231,
       "image_url": "https://client9681.idobooking.com/images/objects/pictures/large/3/1/108.jpg",
       "category": "cabins",
-      "labels": ["Jacuzzi na tarasie", "Ulubieniec gości"],
-      "attributes": {"city": "Osada Hygge", "region": "Gostyninsko-Wloclawski Park Krajobrazowy", "room_type": "cały domek", "hot_tub": "yes", "sauna": "no", "pets_allowed": "yes", "breakfast_included": "no", "refundable": "yes", "typical_rate_band": "649-829", "price_unit": "per_night", "availability_from": "2026-06-01", "availability_to": "2027-03-31"},
+      "labels": ["Basen SPA na tarasie", "Do 6 osób", "Ulubieniec gości"],
+      "attributes": {"city": "Osada Hygge", "region": "Gostyninsko-Wloclawski Park Krajobrazowy", "room_type": "cały domek", "max_guests": "6", "hot_tub": "tak", "air_conditioning": "tak", "pets_allowed": "tak", "breakfast_included": "nie", "refundable": "yes", "typical_rate_band": "649-829", "price_unit": "per_night", "availability_from": "2026-06-01", "availability_to": "2027-03-31"},
       "in_stock": true,
-      "short_description": "Lagom means 'just right' in Swedish — the original cabin, cosy and warm with gold-and-copper accents and a jacuzzi on the terrace.",
-      "long_description": "Lagom was the first Osada Hygge cabin and still the sentimental favourite: warm, pale tones lifted with gold and copper, a deep sofa built for reading, and a private jacuzzi on the terrace facing the trees. Same fifty-six square metres and layout as Fika — sleeps four across a bedroom and mezzanine, full kitchen, underfloor heating — in a softer, warmer palette. Fully refundable up to 48 hours before arrival. Bikes, the lake, and the forest trails are all on the doorstep.",
-      "specs": {"sleeps": "4", "beds": "1 double + mezzanine", "size": "56 sqm", "view": "forest", "hot_tub": "private, on the terrace", "wifi": "free, whole cabin", "parking": "free, by the cabin"},
+      "short_description": "Lagom po szwedzku znaczy „w sam raz” — przytulny domek ze złoto-miedzianymi akcentami i basenem SPA na tarasie, dla maks. 6 osób.",
+      "long_description": "Lagom był pierwszym domkiem Osady Hygge i wciąż pozostaje sentymentalnym faworytem: ciepłe, jasne barwy podkreślone złotem i miedzią, głęboka sofa do czytania i basen SPA (jacuzzi) na tarasie. Dwie sypialnie na piętrze mieszczą do sześciu osób. W pełni wyposażona kuchnia, klimatyzacja, ogrzewanie podłogowe, internet Starlink i taras z grillem. Do dyspozycji rowery (z fotelikami dla dzieci), akcesoria dla najmłodszych, biurko do pracy i hamak; na terenie Osady basen letni, plac zabaw i alpaki. W pełni zwrotny do 7 dni przed przyjazdem.",
+      "specs": {"osoby": "do 6", "sypialnie": "2 na piętrze", "powierzchnia": "56 m²", "jacuzzi": "prywatny basen SPA na tarasie", "klimatyzacja": "w sypialniach i salonie", "ogrzewanie": "podłogowe i ścienne", "internet": "Starlink (satelitarny)", "kuchnia": "w pełni wyposażona (indukcja, lodówka, zmywarka, mikrofala, kawiarka, czajnik; air-fryer na życzenie)", "taras": "z grillem", "dla_dzieci": "łóżeczko, krzesełko, bramki na schody, foteliki rowerowe", "rowery": "dla gości", "na_terenie_osady": "basen letni, plac zabaw, spacery z alpakami", "parking": "bezpłatny, przy domku"},
       "review_highlights": [
-        "The copper-and-cream styling is gorgeous and the bed is a cloud",
-        "Jacuzzi + a bottle of wine + total silence = perfect anniversary",
-        "Felt instantly homey; we didn't want to leave on Sunday"
+        "Miedziano-kremowa stylistyka jest przepiękna, a łóżko to chmura",
+        "Basen SPA + butelka wina + całkowita cisza = idealna rocznica",
+        "Od razu poczuliśmy się jak w domu; nie chcieliśmy wyjeżdżać w niedzielę"
       ]
     },
     {
@@ -57,16 +57,16 @@
       "review_count": 176,
       "image_url": "https://client9681.idobooking.com/images/objects/pictures/large/4/1/186.jpg",
       "category": "cabins",
-      "labels": ["Blisko jeziora", "Przyjazny rodzinom"],
-      "attributes": {"city": "Osada Hygge", "region": "Gostyninsko-Wloclawski Park Krajobrazowy", "room_type": "cały domek", "hot_tub": "no", "sauna": "no", "pets_allowed": "yes", "breakfast_included": "no", "refundable": "yes", "typical_rate_band": "549-699", "price_unit": "per_night", "availability_from": "2026-06-01", "availability_to": "2027-03-31"},
+      "labels": ["Blisko jeziora", "Do 6 osób", "Przyjazny rodzinom"],
+      "attributes": {"city": "Osada Hygge", "region": "Gostyninsko-Wloclawski Park Krajobrazowy", "room_type": "cały domek", "max_guests": "6", "hot_tub": "nie", "air_conditioning": "tak", "pets_allowed": "tak", "breakfast_included": "nie", "refundable": "yes", "typical_rate_band": "549-699", "price_unit": "per_night", "availability_from": "2026-06-01", "availability_to": "2027-03-31"},
       "in_stock": true,
-      "short_description": "A charming, comfortable forest cabin near the lake — made for a cycling weekend, a hammock and a book, and easy space for kids to play.",
-      "long_description": "Gron ('green') is the outdoors cabin: fifty-six square metres opening to a large, safe garden by the Gostynin–Wloclawek forest, with a hammock, a fire pit, and the lake a short ride away. Sleeps four across a bedroom and mezzanine, with a full kitchen and a big table for board-game nights. No hot tub here — this one's for hammock afternoons and campfire evenings. Fully refundable up to 48 hours before arrival.",
-      "specs": {"sleeps": "4", "beds": "1 double + mezzanine", "size": "56 sqm", "view": "forest and garden", "hot_tub": "none", "wifi": "free, whole cabin", "parking": "free, by the cabin"},
+      "short_description": "Komfortowy leśny domek blisko jeziora dla maks. 6 osób — na rowerowy weekend, hamak z książką i beztroską zabawę dzieci.",
+      "long_description": "Gron („zielony”) to domek na świeżym powietrzu: dwie sypialnie na piętrze (łoże małżeńskie oraz dwa pojedyncze łóżka) plus rozkładana sofa w salonie dla dwóch osób — łącznie do sześciu osób. Klimatyzacja, ogrzewanie podłogowe i ścienne, w pełni wyposażona kuchnia, internet Starlink oraz taras z grillem. Pościel i ręczniki, akcesoria dla dzieci, biurko do pracy, hamak i rowery dla całej rodziny. Bez jacuzzi — ten domek jest o hamaku, ognisku i bliskości natury. W pełni zwrotny do 7 dni przed przyjazdem.",
+      "specs": {"osoby": "do 6", "sypialnie": "2 na piętrze", "łóżka": "łoże małżeńskie + 2 pojedyncze, rozkładana sofa dla 2 osób", "powierzchnia": "56 m²", "jacuzzi": "brak", "klimatyzacja": "w sypialniach i salonie", "ogrzewanie": "podłogowe i ścienne", "internet": "Starlink (satelitarny)", "kuchnia": "w pełni wyposażona (indukcja, lodówka, zmywarka, mikrofala, kawiarka, czajnik; air-fryer na życzenie)", "taras": "z grillem", "dla_dzieci": "łóżeczko, krzesełko, bramki na schody, foteliki rowerowe", "rowery": "dla gości", "parking": "bezpłatny, przy domku"},
       "review_highlights": [
-        "Huge safe garden — the kids and dog were in heaven",
-        "Great base for cycling; the lake is a lovely short ride",
-        "Cosy inside, wild and green outside — exactly what we wanted"
+        "Ogromny, bezpieczny teren — dzieci i pies były w niebie",
+        "Świetna baza na rowery; nad jezioro miła, krótka przejażdżka",
+        "Przytulnie w środku, dziko i zielono na zewnątrz — dokładnie tego chcieliśmy"
       ]
     },
     {
@@ -79,16 +79,16 @@
       "review_count": 158,
       "image_url": "https://client9681.idobooking.com/images/objects/pictures/large/5/1/166.jpg",
       "category": "cabins",
-      "labels": ["Blisko jeziora", "Dobra cena"],
-      "attributes": {"city": "Osada Hygge", "region": "Gostyninsko-Wloclawski Park Krajobrazowy", "room_type": "cały domek", "hot_tub": "no", "sauna": "no", "pets_allowed": "yes", "breakfast_included": "no", "refundable": "yes", "typical_rate_band": "499-649", "price_unit": "per_night", "availability_from": "2026-06-01", "availability_to": "2027-03-31"},
+      "labels": ["Blisko jeziora", "Do 6 osób", "Dobra cena"],
+      "attributes": {"city": "Osada Hygge", "region": "Gostyninsko-Wloclawski Park Krajobrazowy", "room_type": "cały domek", "max_guests": "6", "hot_tub": "nie", "air_conditioning": "tak", "pets_allowed": "tak", "breakfast_included": "nie", "refundable": "yes", "typical_rate_band": "499-649", "price_unit": "per_night", "availability_from": "2026-06-01", "availability_to": "2027-03-31"},
       "in_stock": true,
-      "short_description": "Hyggelig — Danish for 'cosy'. A warm, comfortable forest cabin near the lake, big on quiet and easy on the budget.",
-      "long_description": "Hyggelig lives up to its name: fifty-four square metres of warm, unfussy comfort in the forest near the lake, made for slow mornings and long walks. Sleeps four across a bedroom and mezzanine, with a full kitchen and a covered terrace for coffee whatever the weather. No hot tub — the appeal here is the calm and the price. Fully refundable up to 48 hours before arrival.",
-      "specs": {"sleeps": "4", "beds": "1 double + mezzanine", "size": "54 sqm", "view": "forest", "hot_tub": "none", "wifi": "free, whole cabin", "parking": "free, by the cabin"},
+      "short_description": "Hyggelig po duńsku znaczy „przytulny” — ciepły leśny domek blisko jeziora dla maks. 6 osób, dużo spokoju i dobra cena.",
+      "long_description": "Hyggelig wierny swojej nazwie: dwie sypialnie na piętrze (łoże małżeńskie oraz dwa pojedyncze łóżka) mieszczą do sześciu osób. Klimatyzacja, ogrzewanie, w pełni wyposażona kuchnia, internet Starlink i taras z grillem (brykiet dostępny cały rok). Akcesoria dla dzieci, rowery dla dorosłych i dzieci; na terenie Osady plac zabaw, spacery z alpakami i basen latem. Bez jacuzzi — atutem są spokój i cena. W pełni zwrotny do 7 dni przed przyjazdem.",
+      "specs": {"osoby": "do 6", "sypialnie": "2 na piętrze", "łóżka": "łoże małżeńskie + 2 pojedyncze", "powierzchnia": "54 m²", "jacuzzi": "brak", "klimatyzacja": "w sypialniach i salonie", "ogrzewanie": "podłogowe i ścienne", "internet": "Starlink (satelitarny)", "kuchnia": "w pełni wyposażona (indukcja, lodówka, zmywarka, mikrofala, kawiarka, czajnik)", "taras": "z grillem", "dla_dzieci": "łóżeczko, krzesełko, bramki na schody, foteliki rowerowe", "rowery": "dla gości", "na_terenie_osady": "plac zabaw, spacery z alpakami, basen latem", "parking": "bezpłatny, przy domku"},
       "review_highlights": [
-        "Best value of the cabins — warm, quiet, and genuinely cosy",
-        "Loved the covered terrace; we sat out even in the rain",
-        "Simple and comfortable, exactly what a forest getaway should be"
+        "Najlepszy stosunek ceny do jakości — ciepło, cicho i naprawdę przytulnie",
+        "Uwielbialiśmy zadaszony taras; siedzieliśmy na zewnątrz nawet w deszcz",
+        "Prosto i wygodnie, dokładnie tak, jak powinien wyglądać leśny wypad"
       ]
     },
     {
@@ -101,16 +101,16 @@
       "review_count": 92,
       "image_url": "https://client9681.idobooking.com/images/objects/pictures/large/7/1/213.jpg",
       "category": "cabins",
-      "labels": ["Dla dwojga", "Dobra cena"],
-      "attributes": {"city": "Osada Hygge", "region": "Gostyninsko-Wloclawski Park Krajobrazowy", "room_type": "cały domek", "hot_tub": "no", "sauna": "no", "pets_allowed": "yes", "breakfast_included": "no", "refundable": "yes", "typical_rate_band": "369-499", "price_unit": "per_night", "availability_from": "2026-06-01", "availability_to": "2027-03-31"},
+      "labels": ["Do 5 osób", "Dobra cena"],
+      "attributes": {"city": "Osada Hygge", "region": "Gostyninsko-Wloclawski Park Krajobrazowy", "room_type": "cały domek", "max_guests": "5", "hot_tub": "nie", "air_conditioning": "tak", "pets_allowed": "tak", "breakfast_included": "nie", "refundable": "yes", "typical_rate_band": "369-499", "price_unit": "per_night", "availability_from": "2026-06-01", "availability_to": "2027-03-31"},
       "in_stock": true,
-      "short_description": "Lykke — Danish for 'happiness'. The newest and smallest cabin, a snug forest retreat sized for two.",
-      "long_description": "Lykke is the intimate one: forty-five square metres of bright, modern calm added in 2023, sized for two and tucked into the forest near the lake. A comfortable double, a full kitchenette, and a terrace for morning coffee among the pines. No hot tub, no fuss — just a quiet, easy escape at the friendliest rate on the property. Fully refundable up to 48 hours before arrival.",
-      "specs": {"sleeps": "2", "beds": "1 double", "size": "45 sqm", "view": "forest", "hot_tub": "none", "wifi": "free, whole cabin", "parking": "free, by the cabin"},
+      "short_description": "Lykke po duńsku znaczy „szczęście” — najnowszy, kameralny domek dla maks. 5 osób, przytulny leśny zakątek blisko jeziora.",
+      "long_description": "Lykke to ten kameralny, dobudowany w 2023 roku: sypialnia na piętrze (łoże małżeńskie i pojedyncze łóżko) oraz rozkładany narożnik w salonie dla dwóch osób — łącznie do pięciu osób. Klimatyzacja z funkcją grzania, szybki internet Starlink, taras z grillem oraz Netflix i inne serwisy streamingowe. Pościel i ręczniki w cenie, akcesoria dla dzieci i bezpłatna wypożyczalnia rowerów. Bez jacuzzi — cichy, łatwy wypad w najprzyjaźniejszej cenie w osadzie. W pełni zwrotny do 7 dni przed przyjazdem.",
+      "specs": {"osoby": "do 5", "sypialnie": "1 na piętrze", "łóżka": "łoże małżeńskie + pojedyncze łóżko, rozkładany narożnik dla 2 osób", "powierzchnia": "45 m²", "jacuzzi": "brak", "klimatyzacja": "z funkcją grzania", "ogrzewanie": "klimatyzacja grzewcza i grzejniki", "internet": "Starlink (satelitarny)", "kuchnia": "wyposażona", "taras": "z grillem", "rozrywka": "Netflix i inne serwisy streamingowe", "dla_dzieci": "łóżeczko turystyczne, krzesełko, wanienka, bramki na schody", "rowery": "bezpłatna wypożyczalnia", "parking": "bezpłatny, przy domku"},
       "review_highlights": [
-        "Perfect little escape for two — snug, bright, and brand new",
-        "Great price for the Osada Hygge quiet and forest setting",
-        "Small but thought-through; everything you need for a weekend"
+        "Idealny mały wypad — przytulnie, jasno i całkiem nowo",
+        "Świetna cena za ciszę Osady Hygge i leśne otoczenie",
+        "Mały, ale przemyślany; wszystko, czego trzeba na weekend"
       ]
     }
   ]

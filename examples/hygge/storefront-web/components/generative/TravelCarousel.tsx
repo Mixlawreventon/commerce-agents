@@ -6,7 +6,17 @@
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { formatPrice, productCity, productPlace, productPriceUnit } from "@/lib/format";
 import type { Product, ProductsPayload } from "@/lib/types";
+import { api } from "@/lib/api";
+import { DEFAULT_LANG, t as tr } from "@/lib/i18n";
+import { Lightbox } from "../Lightbox";
 import { PostcardWindow } from "../PostcardWindow";
+
+/** The cabin's photo gallery from attributes.gallery ("url|url|…"), else its single hero. */
+function galleryImages(product: Product): string[] {
+  const gallery = (product.attributes?.gallery ?? "").split("|").filter(Boolean);
+  if (gallery.length) return gallery;
+  return product.image_url ? [product.image_url] : [];
+}
 import {
   BODY,
   CARD,
@@ -32,14 +42,47 @@ const HIDDEN_ATTRS = new Set([
   "date_flex",
   "typical_rate_band",
   "units_left_for_dates",
+  // Live-overlay bookkeeping (idobooking): not for display as chips.
+  "gallery",
+  "booking_url",
+  "cabin_id",
+  "quoted_for",
+  "region",
+  "area_m2",
+  // The package behind the quoted rate gets its own chip and struck-through base price;
+  // the one a longer stay would earn gets the nudge chip beside it.
+  "package_name",
+  "package_rate_before",
+  "package_discount_pct",
+  "package_next_name",
+  "package_next_pct",
+  "package_offers",
+  // Dates the assistant offers in prose; not chips on a card.
+  "free_weekends",
+  "free_midweek",
+  // Capacity is stated in copy/specs; room_type is the same for every cabin.
+  "max_guests",
+  "room_type",
 ]);
+
+// The catalog states amenities in Polish as tak/nie, so the chips read them that way and
+// name them in Polish too: an attribute key like "hot_tub" is not guest-facing copy.
+const YES = /^(tak|yes|true|ja)$/i;
+const NO = /^(nie|no|false|nein)$/i;
+const AMENITY_LABELS: Record<string, string> = {
+  hot_tub: "jacuzzi",
+  air_conditioning: "klimatyzacja",
+  pets_allowed: "zwierzaki mile widziane",
+  breakfast_included: "śniadanie w cenie",
+};
 
 function specChips(product: Product): string[] {
   return Object.entries(product.attributes ?? {})
     .filter(([key]) => !HIDDEN_ATTRS.has(key) && !/cancel|refund/i.test(key))
     .map(([key, value]) => {
-      if (/^(yes|true)$/i.test(value)) return key.replace(/_/g, " ").replace(/\bincluded\b/, "incl.");
-      if (/^(no|false)$/i.test(value)) return null;
+      // A "no" is the absence of a feature: naming it would read as if the cabin had it.
+      if (NO.test(value)) return null;
+      if (YES.test(value)) return AMENITY_LABELS[key] ?? key.replace(/_/g, " ");
       if (key === "duration_hours") return `${value} hrs`;
       if (key === "group_size_max") return `groups of ${value}`;
       return value;
@@ -67,6 +110,25 @@ function cancellationDeadline(product: Product): string | null {
   return month ? `${month} ${Number(match[3])}` : null;
 }
 
+/** The named idobooking package the quoted rate comes from, when one beat the season rate. */
+function packageOffer(
+  product: Product,
+): { name: string; rateBefore: number; discountPct: number } | null {
+  const name = product.attributes?.package_name?.trim();
+  const rateBefore = Number(product.attributes?.package_rate_before);
+  const discountPct = Number(product.attributes?.package_discount_pct);
+  if (!name || !Number.isFinite(rateBefore) || !Number.isFinite(discountPct)) return null;
+  return { name, rateBefore, discountPct };
+}
+
+/** The deeper package a longer stay would earn — shown whether or not one already applies. */
+function packageNudge(product: Product): { name: string; discountPct: number } | null {
+  const name = product.attributes?.package_next_name?.trim();
+  const discountPct = Number(product.attributes?.package_next_pct);
+  if (!name || !Number.isFinite(discountPct)) return null;
+  return { name, discountPct };
+}
+
 function isNonRefundable(product: Product): boolean {
   if (hasFreeCancellation(product)) return false;
   return Object.entries(product.attributes ?? {}).some(
@@ -80,7 +142,7 @@ function SoldOutBand() {
       className="absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 py-1.5 text-center"
       style={{ ...META, fontSize: 11, color: "var(--surface)", background: "rgba(31,61,51,0.82)" }}
     >
-      Sold out for these dates
+      Brak wolnych terminów
     </span>
   );
 }
@@ -103,15 +165,48 @@ export function TravelCard({
   const chips = specChips(product);
   const soldOut = product.in_stock === false;
   const deadline = cancellationDeadline(product);
+  const promo = packageOffer(product);
+  const nudge = packageNudge(product);
+
+  const images = galleryImages(product);
+  const hasGallery = images.length > 1;
+  const [galleryOpen, setGalleryOpen] = useState(false);
+
+  const photo = (
+    <PostcardWindow
+      city={productPlace(product)}
+      title={product.title}
+      imageUrl={product.image_url}
+      showLabel={false}
+      className={horizontal ? "h-full min-h-[90px] w-full" : "aspect-[16/10] w-full"}
+    />
+  );
 
   const window_ = (
     <div className={`relative ${horizontal ? "w-36 shrink-0 self-stretch" : ""}`}>
-      <PostcardWindow
-        city={productPlace(product)}
-        title={product.title}
-        className={horizontal ? "h-full min-h-[90px] w-full" : "aspect-[16/10] w-full"}
-      />
+      {hasGallery ? (
+        <button
+          type="button"
+          onClick={() => setGalleryOpen(true)}
+          aria-label={`Open gallery, ${images.length} photos`}
+          className="block h-full w-full cursor-zoom-in"
+        >
+          {photo}
+          <span
+            className="absolute bottom-1.5 right-1.5 z-10 flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] text-white"
+            style={{ background: "rgba(12,20,16,0.6)" }}
+          >
+            <span aria-hidden>⊞</span>
+            {images.length}
+          </span>
+        </button>
+      ) : (
+        photo
+      )}
       {soldOut ? <SoldOutBand /> : null}
+      {galleryOpen ? (
+        <Lightbox images={images} onClose={() => setGalleryOpen(false)} />
+      ) : null}
     </div>
   );
 
@@ -123,11 +218,42 @@ export function TravelCard({
       <div className="line-clamp-1" style={META}>
         {[product.brand, city].filter(Boolean).join(" · ")}
       </div>
-      {chips.length ||
+      {promo ||
+      nudge ||
+      chips.length ||
       hasFreeCancellation(product) ||
       isNonRefundable(product) ||
       product.attributes?.units_left_for_dates ? (
         <div className="flex flex-wrap items-center gap-1.5">
+          {promo ? (
+            <span
+              className="rounded-full px-2 py-0.5"
+              style={{
+                fontFamily: BODY,
+                fontSize: 11,
+                fontWeight: 600,
+                color: "var(--surface)",
+                background: "var(--accent)",
+              }}
+            >
+              −{promo.discountPct}% · {promo.name}
+            </span>
+          ) : null}
+          {nudge ? (
+            <span
+              className="rounded-full px-2 py-0.5"
+              style={{
+                fontFamily: BODY,
+                fontSize: 11,
+                fontWeight: 600,
+                color: "var(--accent)",
+                background: "transparent",
+                border: "1px solid var(--accent)",
+              }}
+            >
+              ↑ −{nudge.discountPct}% · {nudge.name}
+            </span>
+          ) : null}
           {chips.map((chip) => (
             <span
               key={chip}
@@ -153,8 +279,8 @@ export function TravelCard({
                 background: "var(--accent-soft)",
               }}
             >
-              ✓ Free cancellation
-              {deadline ? ` until ${deadline}` : ""}
+              ✓ Bezpłatne odwołanie
+              {deadline ? ` do ${deadline}` : ""}
             </span>
           ) : isNonRefundable(product) ? (
             <span
@@ -167,7 +293,7 @@ export function TravelCard({
                 background: "var(--well)",
               }}
             >
-              Non-refundable
+              Bezzwrotna
             </span>
           ) : null}
           <ScarcityChip unitsLeft={product.attributes?.units_left_for_dates} />
@@ -176,16 +302,38 @@ export function TravelCard({
       <div className="mt-auto flex flex-wrap items-end justify-between gap-x-2 gap-y-0.5 pt-1">
         <Stars rating={product.rating} count={product.review_count} />
         <span className="ml-auto whitespace-nowrap text-right">
+          {promo ? (
+            <span
+              style={{ ...META, fontSize: 12, marginRight: 4, textDecoration: "line-through" }}
+            >
+              {formatPrice(promo.rateBefore)}
+            </span>
+          ) : null}
           <span style={{ fontFamily: DISPLAY, fontSize: 18, fontWeight: 700, color: "var(--accent)" }}>
             {formatPrice(product.price)}
           </span>
           {unit ? (
             <span style={{ ...META, fontSize: 11, marginLeft: 3 }}>
-              {unit} · all-in
+              {unit} · z opłatami
             </span>
           ) : null}
         </span>
       </div>
+      {product.attributes?.booking_url ? (
+        <a
+          href={product.attributes.booking_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          // Recorded before the tab opens; the link works whether or not the call lands.
+          onClick={() => {
+            void api.post("/click", { target: "booking", product_id: product.product_id });
+          }}
+          className="mt-1 rounded-full px-3 py-1.5 text-center text-[12px] font-semibold"
+          style={{ background: "var(--accent)", color: "var(--surface)" }}
+        >
+          {tr(DEFAULT_LANG, "bookAt")} →
+        </a>
+      ) : null}
       <RateGauge price={product.price} band={product.attributes?.typical_rate_band} />
       <DateFlexStrip raw={product.attributes?.date_flex} />
       {reason ? (

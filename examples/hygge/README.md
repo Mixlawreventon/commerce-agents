@@ -51,12 +51,33 @@ real deployment puts its own auth in front.
 - `api/mock_travel.py`: `MockTravel`, the `StorefrontBackend` over the fixtures in `data/`.
   A `travel_date` filter is enforced as availability; a dated result is a quote with a
   `date_flex` rate strip and `free_cancellation_until`. A cabin's first `add_to_cart` books
-  the planned nights.
+  the planned nights. A `guests` filter is enforced as capacity against `max_guests`: every
+  head counts the same, and a baby under one sleeping with its parents is not a head. A
+  `nights` filter is the stay length the quote covers.
+- `api/live_hygge.py`: `HyggeLive`, the same backend with live idobooking data overlaid
+  when `IDOBOOKING_MIDDLEWARE_URL` is set — price, photos, real availability, and the
+  named packages a stay earns. Every card carries the packages on offer, including the
+  deeper one a longer stay would reach; the season rate behind them is an internal
+  pricing-plan name and never shown. Checkout hands off a widget URL pre-configured with
+  the cabin, dates, and party size.
+- Analytics: with `DATABASE_URL` set, `../demo_common/analytics.py` records one row per
+  session start, message, tool call, error, guest verdict, and booking hand-off followed;
+  `POST /api/feedback` and `POST /api/click` take the last two. Rows past
+  `EVENT_RETENTION_DAYS` (90) are dropped daily. `GET /api/admin/stats` and
+  `/api/admin/conversations` read them back, behind `ADMIN_TOKEN` and 404 without one.
+  Unset `DATABASE_URL` and nothing is recorded, with every route behaving the same.
+  `storefront-web/app/admin` reads both back: it asks for the token and keeps it in
+  sessionStorage rather than the URL, which a history and every log would hold.
+- Booking hand-off: each cabin card links to its idobooking widget, tagged
+  `utm_source=osada-hygge&utm_medium=assistant&utm_campaign=hygge-agent` so the booking
+  system's own analytics attributes the visit.
 - `api/agent_config.py`: the shopping config (brand, warm Scandinavian voice, PLN, and a
   real model id via `SHOPPING_MODEL`) and the merchant config.
 - `api/main.py`: the storefront host with the itinerary extension and an in-memory store
   that `MemorySeeder` refills from `data/memory-seed.json` on boot.
 - `storefront-web/`: this example's cards, views, and tokens, over `../web-shared/`.
+  `lib/light.ts` reads `NEXT_PUBLIC_LIGHT_UI=1`, the trimmed storefront for real
+  guests: no seeded shopper name, no stays tab or arriving panel, no checkout.
 
 ## Data
 

@@ -96,7 +96,7 @@ export default function BoardingPass({ payload }: { payload: CheckoutPayload }) 
             <span style={META}>
               Total
               <span style={{ display: "block", fontSize: 11, opacity: 0.8, textTransform: "none", letterSpacing: 0 }}>
-                all-in, fees included; final total confirmed at checkout
+                z opłatami; ostateczną kwotę potwierdza idobooking
               </span>
             </span>
             <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 26, color: "var(--accent)" }}>
