@@ -84,6 +84,12 @@ export default function HomeView({ lang, travelerName, trips, tripsFailed, onSee
         {t(lang, "opener")}
       </Greeting>
       <Starters items={starters(lang, light)} />
+      {/* Recording guests' words is only fair if they are told, where they start typing. */}
+      {light ? (
+        <p className="text-[12px]" style={{ color: "var(--ink-soft)" }}>
+          {t(lang, "privacyNote")}
+        </p>
+      ) : null}
       {light ? null : (
         <ArrivingPanel orders={trips} failed={tripsFailed} nouns={NOUNS} thumb={(order) => <TripThumb order={order} />} onSeeAll={onSeeTrips} />
       )}

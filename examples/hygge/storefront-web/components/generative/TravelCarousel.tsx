@@ -6,6 +6,8 @@
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { formatPrice, productCity, productPlace, productPriceUnit } from "@/lib/format";
 import type { Product, ProductsPayload } from "@/lib/types";
+import { api } from "@/lib/api";
+import { DEFAULT_LANG, t as tr } from "@/lib/i18n";
 import { Lightbox } from "../Lightbox";
 import { PostcardWindow } from "../PostcardWindow";
 
@@ -314,6 +316,21 @@ export function TravelCard({
           ) : null}
         </span>
       </div>
+      {product.attributes?.booking_url ? (
+        <a
+          href={product.attributes.booking_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          // Recorded before the tab opens; the link works whether or not the call lands.
+          onClick={() => {
+            void api.post("/click", { target: "booking", product_id: product.product_id });
+          }}
+          className="mt-1 rounded-full px-3 py-1.5 text-center text-[12px] font-semibold"
+          style={{ background: "var(--accent)", color: "var(--surface)" }}
+        >
+          {tr(DEFAULT_LANG, "bookAt")} →
+        </a>
+      ) : null}
       <RateGauge price={product.price} band={product.attributes?.typical_rate_band} />
       <DateFlexStrip raw={product.attributes?.date_flex} />
       {reason ? (

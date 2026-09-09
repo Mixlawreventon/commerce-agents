@@ -7,6 +7,8 @@ storefront web app calls.
     POST   /api/session               bind a session to a demo profile, return its id and name
     POST   /api/chat                  one turn, streamed as SSE AgentEvents
     POST   /api/feedback              a guest's verdict on one reply
+    POST   /api/click                 a hand-off the guest followed
+    GET    /api/admin/stats|conversations   the recorded traffic (ADMIN_TOKEN)
     GET    /api/products[/{id}]       catalog reads (public)
     GET    /api/cart                  the session's cart
     GET    /api/orders                the session user's orders, newest first
@@ -23,12 +25,14 @@ dependency, and mounts a direct add-to-cart button through ``StorefrontHost.dire
 # module evaluates its annotations eagerly (no ``from __future__ import annotations``).
 
 import logging
+import os
+import secrets
 from collections.abc import Awaitable, Callable, Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal, cast
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -68,6 +72,14 @@ class FeedbackRequest(BaseModel):
     verdict: Literal["up", "down"]
     message_index: int = Field(ge=0)
     reason: str | None = Field(default=None, max_length=2000)
+
+
+class ClickRequest(BaseModel):
+    """A guest leaving for somewhere the store handed them off to. ``target`` is a closed
+    set: an endpoint that writes a row per free-text name is a way to fill the table."""
+
+    target: Literal["booking"]
+    product_id: str = Field(max_length=64)
 
 
 # The languages the storefront UI can request the assistant reply in.
@@ -300,6 +312,38 @@ def build_storefront_host(
             reason=request.reason,
         )
         return {"recorded": True}
+
+    @app.post("/api/click")
+    async def record_click(request: ClickRequest, record: CurrentSession) -> dict:
+        """A hand-off the guest followed. The destination carries campaign tags for its own
+        analytics; this row is the store's side of the same click."""
+        host.events.record(
+            "click",
+            session_id=record.session_id,
+            user_id=record.user_id,
+            target=request.target,
+            product_id=request.product_id,
+        )
+        return {"recorded": True}
+
+    def _admin(authorization: str = Header(default="")) -> None:
+        """Guards the routes that read guests' words back. Unset ``ADMIN_TOKEN`` means the
+        routes answer 404: an example must not ship a readable transcript store, and a
+        deployment that forgot to set a token must not quietly serve one either."""
+        token = os.environ.get("ADMIN_TOKEN", "").strip()
+        if not token:
+            raise HTTPException(status_code=404, detail="Not Found")
+        offered = authorization.removeprefix("Bearer ").strip()
+        if not secrets.compare_digest(offered, token):
+            raise HTTPException(status_code=401, detail="Bad or missing admin token")
+
+    @app.get("/api/admin/stats", dependencies=[Depends(_admin)])
+    async def admin_stats(days: int = 30) -> dict:
+        return await host.events.summary(days)
+
+    @app.get("/api/admin/conversations", dependencies=[Depends(_admin)])
+    async def admin_conversations(limit: int = 20) -> dict:
+        return {"conversations": await host.events.conversations(limit)}
 
     @app.get("/api/products")
     async def list_products(category: str | None = None, limit: int = 24) -> dict:

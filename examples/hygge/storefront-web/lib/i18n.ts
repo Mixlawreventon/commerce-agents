@@ -44,7 +44,9 @@ type Key =
   | "feedbackDown"
   | "feedbackReason"
   | "feedbackSend"
-  | "feedbackThanks";
+  | "feedbackThanks"
+  | "privacyNote"
+  | "bookAt";
 
 const DICT: Record<Lang, Record<Key, string>> = {
   pl: {
@@ -77,6 +79,8 @@ const DICT: Record<Lang, Record<Key, string>> = {
     feedbackReason: "Co było nie tak? (opcjonalnie)",
     feedbackSend: "Wyślij",
     feedbackThanks: "Dziękujemy — przekazaliśmy to dalej.",
+    privacyNote: "Rozmowy z asystentem zapisujemy, żeby go ulepszać. Nie podawaj danych karty ani hasła.",
+    bookAt: "Rezerwuj w idobooking",
   },
   en: {
     viewAssistant: "Assistant",
@@ -108,6 +112,8 @@ const DICT: Record<Lang, Record<Key, string>> = {
     feedbackReason: "What was wrong? (optional)",
     feedbackSend: "Send",
     feedbackThanks: "Thank you — we've passed this on.",
+    privacyNote: "We keep these conversations to improve the assistant. Please don't share card details or passwords.",
+    bookAt: "Book on idobooking",
   },
   de: {
     viewAssistant: "Assistent",
@@ -139,6 +145,8 @@ const DICT: Record<Lang, Record<Key, string>> = {
     feedbackReason: "Was war falsch? (optional)",
     feedbackSend: "Senden",
     feedbackThanks: "Danke — wir geben das weiter.",
+    privacyNote: "Wir speichern diese Gespräche, um den Assistenten zu verbessern. Bitte keine Kartendaten oder Passwörter.",
+    bookAt: "Auf idobooking buchen",
   },
 };
 

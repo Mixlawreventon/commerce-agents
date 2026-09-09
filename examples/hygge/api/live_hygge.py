@@ -55,6 +55,19 @@ _WIDGET_URL_DATED = (
     "https://client9681.idobooking.com/book-now/booking/defaultchoice"
     "/start_date/{start}/end_date/{end}/currency/1/language/1?ob[{id}]&rooms=1&persons-adult={adults}"
 )
+# idobooking is a separate property with its own analytics, and a guest arriving there has
+# crossed a domain boundary: without these the visit lands in its "direct" bucket and the
+# assistant looks like it sent nobody. Standard UTM keys, so any analytics reads them.
+_UTM = "utm_source=osada-hygge&utm_medium=assistant&utm_campaign=hygge-agent"
+
+
+def _tagged(url: str) -> str:
+    """The widget URL with the campaign tags a booking system's analytics expects."""
+    if not url or "utm_source=" in url:
+        return url
+    return f"{url}{'&' if '?' in url else '?'}{_UTM}"
+
+
 # A dated search only knows the arrival; quote this many nights to check availability/price.
 _DEFAULT_QUOTE_NIGHTS = 2
 
@@ -199,7 +212,7 @@ class HyggeLive(MockTravel):
             product = self.products.get(slug)
             if product is not None:
                 product.attributes["cabin_id"] = str(cabin_id)
-                product.attributes["booking_url"] = _WIDGET_URL.format(id=cabin_id)
+                product.attributes["booking_url"] = _tagged(_WIDGET_URL.format(id=cabin_id))
         data = self._get("/api/cabins")
         if not data:
             logger.warning(
@@ -220,7 +233,7 @@ class HyggeLive(MockTravel):
             if cabin.get("area_m2"):
                 product.attributes["area_m2"] = str(cabin["area_m2"])
             if cabin.get("widget_url"):
-                product.attributes["booking_url"] = cabin["widget_url"]
+                product.attributes["booking_url"] = _tagged(cabin["widget_url"])
             product.attributes["cabin_id"] = str(cabin.get("id", ""))
         logger.info("overlaid %d live cabins", len(data.get("cabins", [])))
 
@@ -321,8 +334,10 @@ class HyggeLive(MockTravel):
             end = start + timedelta(days=max(nights, 1))
         except ValueError:
             return None
-        return _WIDGET_URL_DATED.format(
-            start=start.isoformat(), end=end.isoformat(), id=cabin_id, adults=guests
+        return _tagged(
+            _WIDGET_URL_DATED.format(
+                start=start.isoformat(), end=end.isoformat(), id=cabin_id, adults=guests
+            )
         )
 
     # ------------------------------------------------------------------
