@@ -12,4 +12,6 @@
  * Set `NEXT_PUBLIC_LIGHT_UI=1` on the deployment to turn it on. It is read at build time,
  * so changing it needs a rebuild.
  */
-export const LIGHT_UI = process.env.NEXT_PUBLIC_LIGHT_UI === "1";
+// Trimmed: a value set from a shell pipe easily carries a trailing newline, and a flag
+// that silently reads as off is worse than one that is forgiving about whitespace.
+export const LIGHT_UI = process.env.NEXT_PUBLIC_LIGHT_UI?.trim() === "1";
