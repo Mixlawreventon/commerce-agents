@@ -1,0 +1,154 @@
+# Copyright 2026 Anthropic PBC
+# SPDX-License-Identifier: Apache-2.0
+
+"""Optional "book with the assistant" path for Osada Hygge.
+
+Creates a reservation directly in idobooking via the Administration Panel API
+(``reservations/add``); online payment is left to idobooking/idopayments (the guest gets a
+payment link for a ``waitingForPayment`` reservation). The self-service path (opening the
+cabin's idobooking widget) needs none of this and always works.
+
+Enabled only when Admin API credentials are present, so the store runs fine without them:
+
+    IDOBOOKING_API_LOGIN         panel API login (userLogin)
+    IDOBOOKING_API_PASSWORD      panel API key (authenticateKey)
+    IDOBOOKING_ADMIN_DOMAIN      default "client9681.idosell.com"
+    IDOBOOKING_API_VERSION       default "36"
+    IDOBOOKING_RESERVATION_STATUS  default "unconfirmed" — set to "waitingForPayment" to go live
+
+Creating a reservation is a write to the live booking system, so the endpoint is a
+deliberate, explicit action (the guest confirms), not something the model calls on its own.
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+
+import httpx
+from fastapi import APIRouter
+from pydantic import BaseModel, Field
+
+logger = logging.getLogger("hygge.booking")
+
+# Catalog product id -> idobooking offer/object id (the five real cabins).
+_SLUG_TO_ID = {"HY-FIKA": 12, "HY-LAGOM": 13, "HY-GRON": 14, "HY-HYGGELIG": 15, "HY-LYKKE": 17}
+
+
+def _creds() -> tuple[str, str] | None:
+    login = os.environ.get("IDOBOOKING_API_LOGIN", "").strip()
+    key = os.environ.get("IDOBOOKING_API_PASSWORD", "").strip()
+    return (login, key) if login and key else None
+
+
+def booking_configured() -> bool:
+    return _creds() is not None
+
+
+class Guest(BaseModel):
+    first_name: str = Field(min_length=1, max_length=80)
+    last_name: str = Field(min_length=1, max_length=80)
+    email: str = Field(min_length=3, max_length=160)
+    phone: str = Field(default="", max_length=40)
+
+
+class BookRequest(BaseModel):
+    product_id: str = Field(min_length=1, max_length=40)
+    date_from: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    date_to: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    adults: int = Field(default=2, ge=1, le=12)
+    children: int = Field(default=0, ge=0, le=12)
+    price: float | None = Field(default=None, ge=0)
+    guest: Guest
+
+
+def _admin_url(method: str) -> str:
+    domain = os.environ.get("IDOBOOKING_ADMIN_DOMAIN", "client9681.idosell.com").strip()
+    version = os.environ.get("IDOBOOKING_API_VERSION", "36").strip()
+    return f"https://{domain}/api/reservations/{method}/{version}/json"
+
+
+async def create_reservation(req: BookRequest) -> dict:
+    """Call idobooking ``reservations/add``. Returns a normalized result dict; on any
+    problem returns ``{ok: False, ...}`` with the raw response for diagnosis."""
+    creds = _creds()
+    if creds is None:
+        return {"ok": False, "configured": False, "message": "Booking is not configured."}
+    cabin_id = _SLUG_TO_ID.get(req.product_id)
+    if cabin_id is None:
+        return {"ok": False, "message": f"Unknown cabin {req.product_id}."}
+
+    login, key = creds
+    status = os.environ.get("IDOBOOKING_RESERVATION_STATUS", "unconfirmed").strip()
+    payload = {
+        "authenticate": {"userLogin": login, "authenticateKey": key},
+        "params": {
+            "reservations": [
+                {
+                    "dateFrom": req.date_from,
+                    "dateTo": req.date_to,
+                    "price": req.price,
+                    "status": status,
+                    "currency": "PLN",
+                    "notify": "y",
+                    "internalSource": "other",
+                    "clientData": {
+                        "type": "person",
+                        "firstName": req.guest.first_name,
+                        "lastName": req.guest.last_name,
+                        "email": req.guest.email,
+                        "phone": req.guest.phone,
+                        "language": "pol",
+                        "currency": "PLN",
+                    },
+                    "packages": [
+                        {
+                            "items": [
+                                {
+                                    "objectId": cabin_id,
+                                    "price": req.price,
+                                    "numberOfAdults": req.adults,
+                                    "numberOfBigChildren": req.children,
+                                    "numberOfSmallChildren": 0,
+                                }
+                            ]
+                        }
+                    ],
+                }
+            ]
+        },
+    }
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(_admin_url("add"), json=payload)
+            body = resp.json()
+    except Exception as error:
+        logger.warning("reservations/add call failed", exc_info=True)
+        return {"ok": False, "message": f"Could not reach the booking system: {error}"}
+
+    # Success shape: {"reservations":[{"success":true,"reservationId":123,...}]}
+    rows = (body or {}).get("reservations") or []
+    row = rows[0] if rows else {}
+    if row.get("success") and row.get("reservationId"):
+        return {
+            "ok": True,
+            "reservation_id": row["reservationId"],
+            "status": status,
+            "raw": body,
+        }
+    return {"ok": False, "message": "idobooking did not confirm the reservation.", "raw": body}
+
+
+def create_booking_router() -> APIRouter:
+    router = APIRouter()
+
+    @router.get("/book/config")
+    async def config() -> dict:
+        """Whether the assistant-booking path is available (drives the storefront UI)."""
+        return {"configured": booking_configured()}
+
+    @router.post("/book")
+    async def book(request: BookRequest) -> dict:
+        return await create_reservation(request)
+
+    return router

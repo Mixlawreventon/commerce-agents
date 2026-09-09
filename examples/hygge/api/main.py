@@ -14,6 +14,7 @@ from demo_common import REPO_ROOT, MemorySeeder, build_storefront_host, load_dem
 from shopping_agent_runtime import ShoppingAgent
 
 from .agent_config import build_shopping_config
+from .booking import create_booking_router
 from .itinerary import build_itinerary_extension
 from .live_hygge import build_backend
 from .merchant import create_merchant_router
@@ -39,3 +40,6 @@ host = build_storefront_host(
 )
 app = host.app
 app.include_router(create_merchant_router(backend, InMemoryMemoryStore()), prefix="/api/merchant")
+# Optional "book with the assistant" path (idobooking reservations/add); dormant until
+# IDOBOOKING_API_LOGIN/PASSWORD are set. Self-service booking via the widget needs none of it.
+app.include_router(create_booking_router(), prefix="/api")
