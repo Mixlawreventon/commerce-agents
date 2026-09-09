@@ -140,6 +140,59 @@ def _ladder_from_pricing(payload: dict) -> list[dict[str, Any]]:
     return sorted(ladder.values(), key=lambda entry: entry["discount_pct"], reverse=True)
 
 
+# How far ahead to look, and how many options to name. More than a few is not a suggestion.
+_SUGGEST_DAYS = 70
+_SUGGEST_WEEKENDS = 3
+_SUGGEST_MIDWEEK = 2
+
+
+def _open_counts(payload: dict) -> dict[str, int]:
+    """How many cabins are free on each day of the calendar."""
+    counts: dict[str, int] = {}
+    for cabin in payload.get("cabins", []):
+        for day, state in (cabin.get("days") or {}).items():
+            if isinstance(state, dict) and state.get("available"):
+                counts[day] = counts.get(day, 0) + 1
+    return counts
+
+
+def _suggestions_from_calendar(payload: dict, today: date) -> dict[str, str]:
+    """Concrete dates to offer: the next weekends with anything left, and the next midweek
+    stretches.
+
+    Merging every free day into one range is useless here — one cabin free on each of fifty
+    days reads as "everything is open" when the weekends inside it are gone. The property
+    fills Friday and Saturday first, so weekends are counted as whole Fri-Sun stays and
+    named with how much is left; midweek is offered separately, where the choice is wide.
+    """
+    counts = _open_counts(payload)
+    horizon = today + timedelta(days=_SUGGEST_DAYS)
+    weekends: list[str] = []
+    midweek: list[str] = []
+    day = today
+    while day <= horizon:
+        iso = day.isoformat()
+        free = counts.get(iso, 0)
+        if day.weekday() == 4:  # Friday: a weekend stay needs Friday and Saturday
+            saturday = (day + timedelta(days=1)).isoformat()
+            together = min(free, counts.get(saturday, 0))
+            if together and len(weekends) < _SUGGEST_WEEKENDS:
+                cabins = "1 domek" if together == 1 else f"{together} domki"
+                weekends.append(f"{iso}..{(day + timedelta(days=2)).isoformat()} ({cabins})")
+        elif day.weekday() == 0 and free and len(midweek) < _SUGGEST_MIDWEEK:
+            # Monday opening a stretch that reaches at least Thursday.
+            nights = [(day + timedelta(days=n)).isoformat() for n in range(1, 4)]
+            if all(counts.get(night) for night in nights):
+                midweek.append(f"{iso}..{(day + timedelta(days=4)).isoformat()}")
+        day += timedelta(days=1)
+    found: dict[str, str] = {}
+    if weekends:
+        found["free_weekends"] = "; ".join(weekends)
+    if midweek:
+        found["free_midweek"] = "; ".join(midweek)
+    return found
+
+
 class HyggeLive(MockTravel):
     def __init__(self, middleware_url: str, data_dir=DATA_DIR, today: date | None = None) -> None:
         super().__init__(data_dir=data_dir, today=today)
@@ -151,6 +204,8 @@ class HyggeLive(MockTravel):
         self._session_guests: dict[str, int] = {}
         # Package ladders keyed by the date they were quoted from; one probe serves a date.
         self._ladders: dict[str, list[dict[str, Any]]] = {}
+        # Dates worth offering, from the calendar, keyed by party size.
+        self._stretches: dict[str, dict[str, str]] = {}
         self._overlay_live_cabins()
         self._load_property()
 
@@ -193,6 +248,17 @@ class HyggeLive(MockTravel):
             )
             self._ladders[key] = _ladder_from_pricing(payload) if payload else []
         return self._ladders[key]
+
+    async def _suggestions(self, guests: int) -> dict[str, str]:
+        """Dates worth offering, from the calendar. One call covers three months and is
+        served from the middleware's own database, so it is cheap; cached per party."""
+        key = str(guests)
+        if key not in self._stretches:
+            payload = await self._aget("/api/calendar-pricing", {"months": 3, "adults": guests})
+            self._stretches[key] = (
+                _suggestions_from_calendar(payload, self.today) if payload else {}
+            )
+        return self._stretches[key]
 
     async def _current_ladder(self, guests: int) -> list[dict[str, Any]]:
         """The packages on offer when no dates are on the table yet. Each probed date is
@@ -344,6 +410,13 @@ class HyggeLive(MockTravel):
     # Search
     # ------------------------------------------------------------------
 
+    def _attach_suggestions(self, results: list[Product], found: dict[str, str]) -> None:
+        """Dates to offer, on every card, so a guest whose weekend is gone is handed others
+        rather than asked to guess again."""
+        for product in results:
+            for key, value in found.items():
+                product.attributes[key] = value
+
     def _attach_ladder(self, results: list[Product], ladder: list[dict[str, Any]]) -> None:
         """Name the active packages on every card, whether or not this stay already earns
         one. A longer-stay discount only works as an invitation if a guest looking at two
@@ -375,8 +448,10 @@ class HyggeLive(MockTravel):
         if travel_date is None:
             # No dates: rank the whole (live-priced) catalog, as the static backend does,
             # still naming the packages on offer from today.
+            guests = _guest_count(filters)
             results = await super().search_products(session, query, filters, limit)
-            self._attach_ladder(results, await self._current_ladder(_guest_count(filters)))
+            self._attach_ladder(results, await self._current_ladder(guests))
+            self._attach_suggestions(results, await self._suggestions(guests))
             return results
 
         # Remember the check-in so checkout can hand off a dated, ready-to-pay offer.
@@ -440,6 +515,7 @@ class HyggeLive(MockTravel):
                     f"{travel_date.isoformat()}..{departure.isoformat()}"
                 )
             self._attach_ladder(taken, await self._package_ladder(travel_date, guests))
+            self._attach_suggestions(taken, await self._suggestions(guests))
             return taken
 
         ranked = rank_products(
@@ -473,6 +549,7 @@ class HyggeLive(MockTravel):
             # at booking — so we do not assert one here (only that a refundable rate exists).
             product.attributes["quoted_for"] = f"{travel_date.isoformat()}..{departure.isoformat()}"
         self._attach_ladder(results, await self._package_ladder(travel_date, guests))
+        self._attach_suggestions(results, await self._suggestions(guests))
         return results
 
 

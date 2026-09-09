@@ -57,6 +57,9 @@ const HIDDEN_ATTRS = new Set([
   "package_next_name",
   "package_next_pct",
   "package_offers",
+  // Dates the assistant offers in prose; not chips on a card.
+  "free_weekends",
+  "free_midweek",
   // Capacity is stated in copy/specs; room_type is the same for every cabin.
   "max_guests",
   "room_type",
