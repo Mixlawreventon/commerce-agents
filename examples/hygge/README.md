@@ -65,6 +65,8 @@ real deployment puts its own auth in front.
 - `api/main.py`: the storefront host with the itinerary extension and an in-memory store
   that `MemorySeeder` refills from `data/memory-seed.json` on boot.
 - `storefront-web/`: this example's cards, views, and tokens, over `../web-shared/`.
+  `lib/light.ts` reads `NEXT_PUBLIC_LIGHT_UI=1`, the trimmed storefront for real
+  guests: no seeded shopper name, no stays tab or arriving panel, no checkout.
 
 ## Data
 

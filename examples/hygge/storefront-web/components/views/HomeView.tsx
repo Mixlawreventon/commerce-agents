@@ -24,12 +24,13 @@ const POSTCARD_IMAGES: Record<string, string> = {
 /** Sends just before the 300ms mail animation ends. */
 const MAILING_MS = 260;
 
-function starters(lang: Lang): Starter[] {
+function starters(lang: Lang, light: boolean): Starter[] {
   return [
     { icon: "calendar", prompt: t(lang, "starterWeekend") },
     { icon: "plane", prompt: t(lang, "starterJacuzzi") },
     { icon: "return", prompt: t(lang, "starterPets") },
-    { icon: "pin", prompt: t(lang, "starterBooking") },
+    // Light mode has no stays to look up, so it offers the packages instead.
+    { icon: "pin", prompt: t(lang, light ? "starterPackages" : "starterBooking") },
   ];
 }
 
@@ -76,14 +77,16 @@ function Postcards({ lang }: { lang: Lang }) {
   );
 }
 
-export default function HomeView({ lang, travelerName, trips, tripsFailed, onSeeTrips }: { lang: Lang; travelerName: string; trips: Order[] | null; tripsFailed: boolean; onSeeTrips: () => void }) {
+export default function HomeView({ lang, travelerName, trips, tripsFailed, onSeeTrips, light = false }: { lang: Lang; travelerName: string; trips: Order[] | null; tripsFailed: boolean; onSeeTrips: () => void; light?: boolean }) {
   return (
     <div className="flex flex-col gap-4">
-      <Greeting title={<h1 className="al-hero">{t(lang, "heroTitle", { name: travelerName })}</h1>}>
+      <Greeting title={<h1 className="al-hero">{light ? t(lang, "heroTitleAnon") : t(lang, "heroTitle", { name: travelerName })}</h1>}>
         {t(lang, "opener")}
       </Greeting>
-      <Starters items={starters(lang)} />
-      <ArrivingPanel orders={trips} failed={tripsFailed} nouns={NOUNS} thumb={(order) => <TripThumb order={order} />} onSeeAll={onSeeTrips} />
+      <Starters items={starters(lang, light)} />
+      {light ? null : (
+        <ArrivingPanel orders={trips} failed={tripsFailed} nouns={NOUNS} thumb={(order) => <TripThumb order={order} />} onSeeAll={onSeeTrips} />
+      )}
       <HomeSection title={t(lang, "sectionTitle")} subtitle={t(lang, "sectionSubtitle")}>
         <Postcards lang={lang} />
       </HomeSection>

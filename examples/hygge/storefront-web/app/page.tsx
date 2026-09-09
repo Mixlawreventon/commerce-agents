@@ -11,6 +11,7 @@ import HomeView from "@/components/views/HomeView";
 import { api, UNREACHABLE } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import { type Lang, LANGS, t, useLang } from "@/lib/i18n";
+import { LIGHT_UI } from "@/lib/light";
 import { NOUNS, TripThumb } from "@/lib/orders";
 import type { CartPayload } from "@/lib/types";
 
@@ -70,7 +71,10 @@ export default function StorefrontPage() {
 
   const chat = useAgentTurn(api, { ...session, unreachable: UNREACHABLE, onEvent });
   // A reply may have changed or refunded a booking, so trips re-read after each one.
-  const { data: trips, failed: tripsFailed } = useResource(session.sessionId ? () => api.fetchOrders() : null, [session.sessionId, chat.completed]);
+  const { data: trips, failed: tripsFailed } = useResource(
+    session.sessionId && !LIGHT_UI ? () => api.fetchOrders() : null,
+    [session.sessionId, chat.completed],
+  );
 
   useEffect(() => {
     if (session.sessionId) void api.fetchCart<CartPayload>().then((next) => next && setCart(next));
@@ -78,9 +82,10 @@ export default function StorefrontPage() {
 
   const views: StoreView<View>[] = [
     { id: "assistant", label: t(lang, "viewAssistant"), icon: "spark" },
-    { id: "trips", label: t(lang, "viewStays"), icon: "plane" },
+    ...(LIGHT_UI ? [] : [{ id: "trips" as const, label: t(lang, "viewStays"), icon: "plane" as const }]),
   ];
-  const shopper = session.shopper ?? { name: "Guest" };
+  // Light mode faces real guests, who are nobody the seeded profile knows.
+  const shopper = LIGHT_UI ? { name: t(lang, "guestName") } : (session.shopper ?? { name: "Guest" });
   const count = cart?.items.length ?? 0;
 
   return (
@@ -99,16 +104,16 @@ export default function StorefrontPage() {
       assistantName={t(lang, "assistantName")}
       shopper={shopper}
       bag={{ label: t(lang, "bagLabel"), count, noun: t(lang, "bagNoun"), figure: count ? formatPrice(cart?.subtotal ?? 0) : null }}
-      panel={<TripPanel cart={cart} checkoutStaged={checkoutStaged} />}
+      panel={<TripPanel cart={cart} checkoutStaged={checkoutStaged} lang={lang} light={LIGHT_UI} />}
       panelOpen={panelOpen}
       onPanelOpenChange={setPanelOpen}
       placeholder={view === "trips" ? t(lang, "placeholderStays") : t(lang, "placeholderAssistant")}
     >
       {/* The conversation stays mounted under the other view so its cards keep their state. */}
       <div className={view === "assistant" ? "h-full" : "hidden"}>
-        <Chat chat={chat} home={<HomeView lang={lang} travelerName={shopper.name} trips={trips} tripsFailed={tripsFailed} onSeeTrips={() => setView("trips")} />} />
+        <Chat chat={chat} home={<HomeView lang={lang} travelerName={shopper.name} trips={trips} tripsFailed={tripsFailed} onSeeTrips={() => setView("trips")} light={LIGHT_UI} />} />
       </div>
-      {view === "trips" ? (
+      {view === "trips" && !LIGHT_UI ? (
         <OrdersView
           orders={trips}
           failed={tripsFailed}

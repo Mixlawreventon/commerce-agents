@@ -32,7 +32,15 @@ type Key =
   | "sectionSubtitle"
   | "staysSubtitle"
   | "askCabin"
-  | "assistantName";
+  | "assistantName"
+  | "heroTitleAnon"
+  | "guestName"
+  | "bagTitle"
+  | "bagEmpty"
+  | "bagTotal"
+  | "bagTotalNote"
+  | "bagAsk"
+  | "starterPackages";
 
 const DICT: Record<Lang, Record<Key, string>> = {
   pl: {
@@ -53,6 +61,14 @@ const DICT: Record<Lang, Record<Key, string>> = {
     staysSubtitle: "Zapytaj o dowolny z nich albo zaplanuj kolejny pobyt na podstawie poprzedniego.",
     askCabin: "Opowiedz o domku {city}",
     assistantName: "Asystent Hygge",
+    heroTitleAnon: "Gotowi na odpoczynek?",
+    guestName: "Gość",
+    bagTitle: "Pobyt",
+    bagEmpty: "Nic jeszcze nie wybrano.\nZapytaj Asystenta Hygge o wolny domek.",
+    bagTotal: "Razem za pobyt",
+    bagTotalNote: "Cena całkowita; nic nie jest pobierane na tym etapie.",
+    bagAsk: "Zapytaj o ten pobyt",
+    starterPackages: "Jakie są promocje na dłuższy pobyt?",
   },
   en: {
     viewAssistant: "Assistant",
@@ -72,6 +88,14 @@ const DICT: Record<Lang, Record<Key, string>> = {
     staysSubtitle: "Ask about any of them, or plan the next one from a past stay.",
     askCabin: "Tell me about the {city} cabin",
     assistantName: "Hygge Assistant",
+    heroTitleAnon: "Ready to unwind?",
+    guestName: "Guest",
+    bagTitle: "Stay",
+    bagEmpty: "Nothing chosen yet.\nAsk the Hygge Assistant about a free cabin.",
+    bagTotal: "Stay total",
+    bagTotalNote: "All-in; nothing is charged at this stage.",
+    bagAsk: "Ask about this stay",
+    starterPackages: "What discounts are there for a longer stay?",
   },
   de: {
     viewAssistant: "Assistent",
@@ -91,8 +115,33 @@ const DICT: Record<Lang, Record<Key, string>> = {
     staysSubtitle: "Frag nach einem davon oder plane den nächsten Aufenthalt aus einem früheren.",
     askCabin: "Erzähl mir vom Häuschen {city}",
     assistantName: "Hygge-Assistent",
+    heroTitleAnon: "Bereit zum Entspannen?",
+    guestName: "Gast",
+    bagTitle: "Aufenthalt",
+    bagEmpty: "Noch nichts ausgewählt.\nFrag den Hygge-Assistenten nach einem freien Häuschen.",
+    bagTotal: "Aufenthalt gesamt",
+    bagTotalNote: "Gesamtpreis; in dieser Phase wird nichts abgebucht.",
+    bagAsk: "Frag nach diesem Aufenthalt",
+    starterPackages: "Welche Rabatte gibt es für einen längeren Aufenthalt?",
   },
 };
+
+const BAG_NOUNS: Record<Lang, (count: number) => string> = {
+  // 1 rezerwacja / 2-4 rezerwacje / 5+ rezerwacji, with the teens taking the last form.
+  pl: (n) => {
+    const tens = n % 100;
+    if (n === 1) return "rezerwacja";
+    const ones = n % 10;
+    return ones >= 2 && ones <= 4 && (tens < 12 || tens > 14) ? "rezerwacje" : "rezerwacji";
+  },
+  en: (n) => (n === 1 ? "booking" : "bookings"),
+  de: (n) => (n === 1 ? "Buchung" : "Buchungen"),
+};
+
+/** "1 rezerwacja", "3 rezerwacje", "0 rezerwacji" — what the bag holds, counted. */
+export function bagCount(lang: Lang, count: number): string {
+  return `${count} ${(BAG_NOUNS[lang] ?? BAG_NOUNS.en)(count)}`;
+}
 
 export function t(lang: Lang, key: Key, vars?: Record<string, string>): string {
   let s = DICT[lang]?.[key] ?? DICT.en[key] ?? key;
