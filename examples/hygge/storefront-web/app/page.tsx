@@ -17,13 +17,20 @@ import type { CartPayload } from "@/lib/types";
 
 type View = "assistant" | "trips";
 
+/** The property's own mark and wordmark, as they are set on hyggeosada.pl: the three
+ *  spruces, then OSADA HYGGE in letterspaced caps. The mark is the site's own artwork,
+ *  cropped clear of the stacked wordmark, which is unreadable at the height of an app bar;
+ *  the words are live text so they stay crisp and can be read aloud. */
 function Wordmark() {
   return (
-    <span className="al-display pr-1 text-[22px] italic leading-none text-(--ink)" style={{ fontWeight: 650 }}>
-      <span className="mr-1 not-italic text-[13px] text-(--accent)" aria-hidden>
-        ◈
+    <span className="flex items-center gap-2 pr-1">
+      <img src="/osada-hygge-mark.png" alt="" aria-hidden width={25} height={26} />
+      <span
+        className="leading-none text-(--brand)"
+        style={{ fontSize: 14.5, fontWeight: 600, letterSpacing: "0.15em" }}
+      >
+        OSADA HYGGE
       </span>
-      Osada Hygge
     </span>
   );
 }

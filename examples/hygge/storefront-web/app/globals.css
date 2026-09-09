@@ -25,6 +25,7 @@
   --ink-faint: #8d9c94; /* hints and placeholders */
   --line: rgba(31, 61, 51, 0.14);
   --line-strong: rgba(31, 61, 51, 0.22); /* control borders */
+  --brand: #065029; /* the wordmark green from hyggeosada.pl; the logo only */
   --accent: #e0653a; /* persimmon: the one accent, used sparingly */
   --accent-strong: #c65330; /* filled buttons */
   --accent-soft: #f4d9cc;
