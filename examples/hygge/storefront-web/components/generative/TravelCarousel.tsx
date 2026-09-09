@@ -60,12 +60,24 @@ const HIDDEN_ATTRS = new Set([
   "room_type",
 ]);
 
+// The catalog states amenities in Polish as tak/nie, so the chips read them that way and
+// name them in Polish too: an attribute key like "hot_tub" is not guest-facing copy.
+const YES = /^(tak|yes|true|ja)$/i;
+const NO = /^(nie|no|false|nein)$/i;
+const AMENITY_LABELS: Record<string, string> = {
+  hot_tub: "jacuzzi",
+  air_conditioning: "klimatyzacja",
+  pets_allowed: "zwierzaki mile widziane",
+  breakfast_included: "śniadanie w cenie",
+};
+
 function specChips(product: Product): string[] {
   return Object.entries(product.attributes ?? {})
     .filter(([key]) => !HIDDEN_ATTRS.has(key) && !/cancel|refund/i.test(key))
     .map(([key, value]) => {
-      if (/^(yes|true)$/i.test(value)) return key.replace(/_/g, " ").replace(/\bincluded\b/, "incl.");
-      if (/^(no|false)$/i.test(value)) return null;
+      // A "no" is the absence of a feature: naming it would read as if the cabin had it.
+      if (NO.test(value)) return null;
+      if (YES.test(value)) return AMENITY_LABELS[key] ?? key.replace(/_/g, " ");
       if (key === "duration_hours") return `${value} hrs`;
       if (key === "group_size_max") return `groups of ${value}`;
       return value;
@@ -125,7 +137,7 @@ function SoldOutBand() {
       className="absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 py-1.5 text-center"
       style={{ ...META, fontSize: 11, color: "var(--surface)", background: "rgba(31,61,51,0.82)" }}
     >
-      Sold out for these dates
+      Brak wolnych terminów
     </span>
   );
 }
@@ -262,8 +274,8 @@ export function TravelCard({
                 background: "var(--accent-soft)",
               }}
             >
-              ✓ Free cancellation
-              {deadline ? ` until ${deadline}` : ""}
+              ✓ Bezpłatne odwołanie
+              {deadline ? ` do ${deadline}` : ""}
             </span>
           ) : isNonRefundable(product) ? (
             <span
@@ -276,7 +288,7 @@ export function TravelCard({
                 background: "var(--well)",
               }}
             >
-              Non-refundable
+              Bezzwrotna
             </span>
           ) : null}
           <ScarcityChip unitsLeft={product.attributes?.units_left_for_dates} />
