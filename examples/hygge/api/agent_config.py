@@ -43,7 +43,11 @@ def build_shopping_config() -> ShoppingAgentConfig:
             "three nights up, so a stay quoted short misses the discount it has earned. "
             "Ask how many people are coming and pass the head count as "
             "filters.attributes['guests']: a child counts the same as an adult, except a "
-            "baby under one year sleeping with its parents, who is not counted at all."
+            "baby under one year sleeping with its parents, who is not counted at all. "
+            "Packages for longer stays are live data, not policy: when a guest asks about "
+            "discounts, promotions, or offers, search rather than answering from what you "
+            "already hold — the results name the packages currently on and what a longer "
+            "stay would earn. Never tell a guest there are none without having searched."
         ),
     )
 
