@@ -11,7 +11,7 @@ import HomeView from "@/components/views/HomeView";
 import { api, UNREACHABLE } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import { type Lang, LANGS, t, useLang } from "@/lib/i18n";
-import { LIGHT_UI } from "@/lib/light";
+import { guestProfileId, LIGHT_UI } from "@/lib/light";
 import { NOUNS, TripThumb } from "@/lib/orders";
 import type { CartPayload } from "@/lib/types";
 
@@ -47,7 +47,9 @@ function LangSwitcher({ lang, onChange }: { lang: Lang; onChange: (l: Lang) => v
 }
 
 export default function StorefrontPage() {
-  const session = useSession(api);
+  // Computed once: a changing profile would restart the session on every render.
+  const [guestId] = useState(() => (LIGHT_UI ? guestProfileId() : undefined));
+  const session = useSession(api, { profile: guestId });
   const [view, setView] = useState<View>("assistant");
   const [cart, setCart] = useState<CartPayload | null>(null);
   // A staged checkout owns the panel's primary action until the trip changes again.
