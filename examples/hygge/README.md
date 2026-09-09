@@ -51,7 +51,14 @@ real deployment puts its own auth in front.
 - `api/mock_travel.py`: `MockTravel`, the `StorefrontBackend` over the fixtures in `data/`.
   A `travel_date` filter is enforced as availability; a dated result is a quote with a
   `date_flex` rate strip and `free_cancellation_until`. A cabin's first `add_to_cart` books
-  the planned nights.
+  the planned nights. A `guests` filter is enforced as capacity against `max_guests`: every
+  head counts the same, and a baby under one sleeping with its parents is not a head.
+- `api/live_hygge.py`: `HyggeLive`, the same backend with live idobooking data overlaid
+  when `IDOBOOKING_MIDDLEWARE_URL` is set — price, photos, real availability, and the
+  named packages a stay earns. Every card carries the packages on offer, including the
+  deeper one a longer stay would reach; the season rate behind them is an internal
+  pricing-plan name and never shown. Checkout hands off a widget URL pre-configured with
+  the cabin, dates, and party size.
 - `api/agent_config.py`: the shopping config (brand, warm Scandinavian voice, PLN, and a
   real model id via `SHOPPING_MODEL`) and the merchant config.
 - `api/main.py`: the storefront host with the itinerary extension and an in-memory store

@@ -53,6 +53,12 @@ from shopping_agent import (
 DATA_DIR = example_data_dir(__file__)
 
 _TRAVEL_DATE = "travel_date"
+# Osada Hygge counts every head the same — a child is an adult here — so party size is one
+# number, not an adults/children split. The only person not counted is a baby under one
+# sleeping with its parents, which the assistant subtracts before it sets this.
+_GUESTS = "guests"
+_DEFAULT_GUESTS = 2
+_MAX_GUESTS = 12
 _SEARCH_WEIGHTS = {
     "title": 3.0,
     "cities": 2.5,
@@ -91,6 +97,27 @@ def _travel_date(filters: SearchFilters) -> date | None:
         return date.fromisoformat(raw) if raw else None
     except ValueError:
         return None
+
+
+def _guest_count(filters: SearchFilters | None) -> int:
+    """The party size stated on the search, clamped to what any cabin could hold."""
+    if filters is None:
+        return _DEFAULT_GUESTS
+    try:
+        stated = int(filters.attributes.get(_GUESTS, ""))
+    except ValueError:
+        return _DEFAULT_GUESTS
+    return min(max(stated, 1), _MAX_GUESTS)
+
+
+def _fits_party(product: ProductDetails, filters: SearchFilters) -> bool:
+    """A cabin the party does not fit in is not a result. Capacity is the catalog's
+    ``max_guests``; a cabin that states none is left unconstrained."""
+    try:
+        capacity = int(product.attributes.get("max_guests", ""))
+    except ValueError:
+        return True
+    return _guest_count(filters) <= capacity
 
 
 def _available_on(product: ProductDetails, travel_date: date) -> bool:
@@ -208,7 +235,11 @@ class MockTravel(StorefrontBackend):
 
     @staticmethod
     def _soft_filter(product: ProductDetails, filters: SearchFilters) -> bool:
-        return matches_attribute_filters(product, filters, ignore=frozenset({_TRAVEL_DATE}))
+        # Party size is a capacity rule, not an attribute to match: left to the generic
+        # matcher, "4" would be hunted for across every attribute and the title.
+        return matches_attribute_filters(
+            product, filters, ignore=frozenset({_TRAVEL_DATE, _GUESTS})
+        ) and _fits_party(product, filters)
 
     async def search_products(
         self,

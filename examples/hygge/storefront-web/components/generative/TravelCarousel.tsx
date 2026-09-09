@@ -47,6 +47,14 @@ const HIDDEN_ATTRS = new Set([
   "quoted_for",
   "region",
   "area_m2",
+  // The package behind the quoted rate gets its own chip and struck-through base price;
+  // the one a longer stay would earn gets the nudge chip beside it.
+  "package_name",
+  "package_rate_before",
+  "package_discount_pct",
+  "package_next_name",
+  "package_next_pct",
+  "package_offers",
   // Capacity is stated in copy/specs; room_type is the same for every cabin.
   "max_guests",
   "room_type",
@@ -85,6 +93,25 @@ function cancellationDeadline(product: Product): string | null {
   return month ? `${month} ${Number(match[3])}` : null;
 }
 
+/** The named idobooking package the quoted rate comes from, when one beat the season rate. */
+function packageOffer(
+  product: Product,
+): { name: string; rateBefore: number; discountPct: number } | null {
+  const name = product.attributes?.package_name?.trim();
+  const rateBefore = Number(product.attributes?.package_rate_before);
+  const discountPct = Number(product.attributes?.package_discount_pct);
+  if (!name || !Number.isFinite(rateBefore) || !Number.isFinite(discountPct)) return null;
+  return { name, rateBefore, discountPct };
+}
+
+/** The deeper package a longer stay would earn — shown whether or not one already applies. */
+function packageNudge(product: Product): { name: string; discountPct: number } | null {
+  const name = product.attributes?.package_next_name?.trim();
+  const discountPct = Number(product.attributes?.package_next_pct);
+  if (!name || !Number.isFinite(discountPct)) return null;
+  return { name, discountPct };
+}
+
 function isNonRefundable(product: Product): boolean {
   if (hasFreeCancellation(product)) return false;
   return Object.entries(product.attributes ?? {}).some(
@@ -121,6 +148,8 @@ export function TravelCard({
   const chips = specChips(product);
   const soldOut = product.in_stock === false;
   const deadline = cancellationDeadline(product);
+  const promo = packageOffer(product);
+  const nudge = packageNudge(product);
 
   const images = galleryImages(product);
   const hasGallery = images.length > 1;
@@ -172,11 +201,42 @@ export function TravelCard({
       <div className="line-clamp-1" style={META}>
         {[product.brand, city].filter(Boolean).join(" · ")}
       </div>
-      {chips.length ||
+      {promo ||
+      nudge ||
+      chips.length ||
       hasFreeCancellation(product) ||
       isNonRefundable(product) ||
       product.attributes?.units_left_for_dates ? (
         <div className="flex flex-wrap items-center gap-1.5">
+          {promo ? (
+            <span
+              className="rounded-full px-2 py-0.5"
+              style={{
+                fontFamily: BODY,
+                fontSize: 11,
+                fontWeight: 600,
+                color: "var(--surface)",
+                background: "var(--accent)",
+              }}
+            >
+              −{promo.discountPct}% · {promo.name}
+            </span>
+          ) : null}
+          {nudge ? (
+            <span
+              className="rounded-full px-2 py-0.5"
+              style={{
+                fontFamily: BODY,
+                fontSize: 11,
+                fontWeight: 600,
+                color: "var(--accent)",
+                background: "transparent",
+                border: "1px solid var(--accent)",
+              }}
+            >
+              ↑ −{nudge.discountPct}% · {nudge.name}
+            </span>
+          ) : null}
           {chips.map((chip) => (
             <span
               key={chip}
@@ -225,6 +285,13 @@ export function TravelCard({
       <div className="mt-auto flex flex-wrap items-end justify-between gap-x-2 gap-y-0.5 pt-1">
         <Stars rating={product.rating} count={product.review_count} />
         <span className="ml-auto whitespace-nowrap text-right">
+          {promo ? (
+            <span
+              style={{ ...META, fontSize: 12, marginRight: 4, textDecoration: "line-through" }}
+            >
+              {formatPrice(promo.rateBefore)}
+            </span>
+          ) : null}
           <span style={{ fontFamily: DISPLAY, fontSize: 18, fontWeight: 700, color: "var(--accent)" }}>
             {formatPrice(product.price)}
           </span>

@@ -20,6 +20,7 @@ from __future__ import annotations
 import logging
 import os
 from datetime import date, timedelta
+from typing import Any
 
 import httpx
 
@@ -33,7 +34,7 @@ from shopping_agent import (
     ShoppingSessionContext,
 )
 
-from .mock_travel import DATA_DIR, MockTravel, _travel_date
+from .mock_travel import _DEFAULT_GUESTS, DATA_DIR, MockTravel, _guest_count, _travel_date
 
 logger = logging.getLogger("hygge.live")
 
@@ -51,6 +52,74 @@ _WIDGET_URL_DATED = (
 _DEFAULT_QUOTE_NIGHTS = 2
 
 
+def _read_offers(offers: list[dict], nights: int) -> dict[str, Any]:
+    """The cheapest nightly rate per rate type, and the named package the best price uses.
+
+    idobooking quotes one entry per bookable offer: a season rate carrying a null
+    ``promotion_id``, plus every package the stay is long enough to earn (a longer stay
+    earns a bigger discount, e.g. "Sezon na grzyby 2026 - 5 nocy - 20%"). Several entries
+    usually share one rate type, so each type keeps its cheapest rather than whichever
+    the API happened to list last.
+    """
+    priced = [offer for offer in offers if offer.get("price")]
+    rates: dict[str, float] = {}
+    for offer in priced:
+        kind = offer.get("type")
+        if kind not in ("refundable", "nonrefundable"):
+            continue
+        nightly = round(float(offer["price"]) / nights)
+        if kind not in rates or nightly < rates[kind]:
+            rates[kind] = nightly
+
+    package: dict[str, Any] | None = None
+    if priced:
+        best = min(priced, key=lambda offer: float(offer["price"]))
+        base = next((offer for offer in priced if offer.get("promotion_id") is None), None)
+        # Only a named package that actually beats the season rate is worth showing.
+        if best.get("promotion_id") is not None and base is not None:
+            before, after = float(base["price"]), float(best["price"])
+            if after < before:
+                package = {
+                    "name": str(best.get("name", "")).strip(),
+                    "rate_before": round(before / nights),
+                    "discount_pct": round((before - after) / before * 100),
+                }
+    return {"rates": rates, "package": package}
+
+
+# A span long enough to qualify for every package, so an undersized stay still learns what
+# a longer one would earn. Packages top out at five nights.
+_LADDER_SPAN_NIGHTS = 7
+# Near-term dates are often fully booked and quote no price at all, so an undated search
+# steps forward until the property quotes one rather than concluding it runs no packages.
+_LADDER_PROBE_OFFSETS = (7, 21, 45)
+
+
+def _ladder_from_pricing(payload: dict) -> list[dict[str, Any]]:
+    """Every named package active for a date, as ``{name, discount_pct}``, deepest first.
+
+    The discount is read off whichever cabin quotes both a season rate and the package, so
+    the ladder states the customer's own percentages rather than any we compute a rate from.
+    """
+    ladder: dict[int, dict[str, Any]] = {}
+    for cabin in payload.get("pricing", []):
+        offers = [offer for offer in cabin.get("offers", []) if offer.get("total_price")]
+        base = next((offer for offer in offers if offer.get("promotion_id") is None), None)
+        if base is None:
+            continue
+        before = float(base["total_price"])
+        for offer in offers:
+            promotion_id = offer.get("promotion_id")
+            after = float(offer["total_price"])
+            if promotion_id is None or promotion_id in ladder or after >= before:
+                continue
+            ladder[promotion_id] = {
+                "name": str(offer.get("name", "")).strip(),
+                "discount_pct": round((before - after) / before * 100),
+            }
+    return sorted(ladder.values(), key=lambda entry: entry["discount_pct"], reverse=True)
+
+
 class HyggeLive(MockTravel):
     def __init__(self, middleware_url: str, data_dir=DATA_DIR, today: date | None = None) -> None:
         super().__init__(data_dir=data_dir, today=today)
@@ -58,6 +127,10 @@ class HyggeLive(MockTravel):
         self.property: dict = {}
         # Last check-in date searched per session, so checkout can hand off a dated offer.
         self._session_dates: dict[str, str] = {}
+        # Party size per session, so checkout hands off the same head count it quoted.
+        self._session_guests: dict[str, int] = {}
+        # Package ladders keyed by the date they were quoted from; one probe serves a date.
+        self._ladders: dict[str, list[dict[str, Any]]] = {}
         self._overlay_live_cabins()
         self._load_property()
 
@@ -83,6 +156,32 @@ class HyggeLive(MockTravel):
         except Exception:
             logger.warning("idobooking middleware call failed: %s", path, exc_info=True)
             return None
+
+    async def _package_ladder(self, quoted_from: date, guests: int) -> list[dict[str, Any]]:
+        """The packages active from a date, so a stay too short to earn one still sees what
+        a longer stay would. Quoted once per date and party — the ladder is the same for
+        every cabin, but a package is priced for the heads it covers."""
+        key = f"{quoted_from.isoformat()}:{guests}"
+        if key not in self._ladders:
+            payload = await self._aget(
+                "/api/pricing",
+                {
+                    "date_from": quoted_from.isoformat(),
+                    "date_to": (quoted_from + timedelta(days=_LADDER_SPAN_NIGHTS)).isoformat(),
+                    "adults": guests,
+                },
+            )
+            self._ladders[key] = _ladder_from_pricing(payload) if payload else []
+        return self._ladders[key]
+
+    async def _current_ladder(self, guests: int) -> list[dict[str, Any]]:
+        """The packages on offer when no dates are on the table yet. Each probed date is
+        cached, so the walk costs nothing after the first undated search."""
+        for offset in _LADDER_PROBE_OFFSETS:
+            ladder = await self._package_ladder(self.today + timedelta(days=offset), guests)
+            if ladder:
+                return ladder
+        return []
 
     def _overlay_live_cabins(self) -> None:
         """Refresh price, photos, gallery, and area from ``/api/cabins`` onto the static
@@ -122,6 +221,8 @@ class HyggeLive(MockTravel):
         """Real contact and stay facts (address, phone, email, check-in/out) from the
         ``/api/agent-data`` property block, so the assistant answers with live values."""
         arrival = self.today + timedelta(days=30)
+        # The endpoint wants a stay to quote; only the property block is read back, so the
+        # dates and party here are a probe and carry no guest's numbers.
         data = self._get(
             "/api/agent-data",
             {
@@ -180,6 +281,7 @@ class HyggeLive(MockTravel):
         offer. Reservation and payment happen in idobooking/idopayments. The URL never
         reaches the model; the host renders it on the checkout card."""
         arrival = self._session_dates.get(session.session_id)
+        guests = self._session_guests.get(session.session_id, _DEFAULT_GUESTS)
         handoffs: list[CheckoutHandoff] = []
         seen: set[str] = set()
         for item in cart.items:
@@ -191,16 +293,18 @@ class HyggeLive(MockTravel):
                 continue
             cabin_id = product.attributes.get("cabin_id")
             name = product.title
-            url = self._booking_url(cabin_id, arrival, item.quantity) or product.attributes.get(
-                "booking_url"
-            )
+            url = self._booking_url(
+                cabin_id, arrival, item.quantity, guests
+            ) or product.attributes.get("booking_url")
             if url:
                 handoffs.append(
                     CheckoutHandoff(url=url, label=f"Zarezerwuj w idobooking — {name}", seller=name)
                 )
         return handoffs
 
-    def _booking_url(self, cabin_id: str | None, arrival: str | None, nights: int) -> str | None:
+    def _booking_url(
+        self, cabin_id: str | None, arrival: str | None, nights: int, guests: int
+    ) -> str | None:
         """A dated widget URL (cabin + dates + guests) when the check-in is known, else None
         so the caller falls back to the plain per-cabin URL."""
         if not cabin_id or not arrival:
@@ -211,12 +315,32 @@ class HyggeLive(MockTravel):
         except ValueError:
             return None
         return _WIDGET_URL_DATED.format(
-            start=start.isoformat(), end=end.isoformat(), id=cabin_id, adults=2
+            start=start.isoformat(), end=end.isoformat(), id=cabin_id, adults=guests
         )
 
     # ------------------------------------------------------------------
     # Search
     # ------------------------------------------------------------------
+
+    def _attach_ladder(self, results: list[Product], ladder: list[dict[str, Any]]) -> None:
+        """Name the active packages on every card, whether or not this stay already earns
+        one. A longer-stay discount only works as an invitation if a guest looking at two
+        nights can see what five would cost, so the deepest package the stay has not
+        reached yet rides along as ``package_next_*``."""
+        if not ladder:
+            return
+        for product in results:
+            product.attributes["package_offers"] = "; ".join(
+                f"{entry['name']} (-{entry['discount_pct']}%)" for entry in ladder
+            )
+            earned = float(product.attributes.get("package_discount_pct") or 0)
+            deeper = next(
+                (entry for entry in ladder if entry["discount_pct"] > earned),
+                None,
+            )
+            if deeper is not None:
+                product.attributes["package_next_name"] = deeper["name"]
+                product.attributes["package_next_pct"] = str(deeper["discount_pct"])
 
     async def search_products(
         self,
@@ -227,18 +351,29 @@ class HyggeLive(MockTravel):
     ) -> list[Product]:
         travel_date = _travel_date(filters) if filters is not None else None
         if travel_date is None:
-            # No dates: rank the whole (live-priced) catalog, as the static backend does.
-            return await super().search_products(session, query, filters, limit)
+            # No dates: rank the whole (live-priced) catalog, as the static backend does,
+            # still naming the packages on offer from today.
+            results = await super().search_products(session, query, filters, limit)
+            self._attach_ladder(results, await self._current_ladder(_guest_count(filters)))
+            return results
 
         # Remember the check-in so checkout can hand off a dated, ready-to-pay offer.
         self._session_dates[session.session_id] = travel_date.isoformat()
-        departure = travel_date + timedelta(days=_DEFAULT_QUOTE_NIGHTS)
+        # Quote the nights the guest actually plans: idobooking's packages only apply from
+        # three nights up, so a fixed two-night probe would hide every one of them.
+        plan = self._trip_plans.get(session.session_id)
+        quote_nights = max(plan.trip_nights or 0, 1) if plan else _DEFAULT_QUOTE_NIGHTS
+        departure = travel_date + timedelta(days=quote_nights)
+        # The stated party drives availability and price: a cabin that cannot sleep them is
+        # not a result, and a package is priced for the heads it covers.
+        guests = _guest_count(filters)
+        self._session_guests[session.session_id] = guests
         avail = await self._aget(
             "/api/availability",
             {
                 "arrival": travel_date.isoformat(),
                 "departure": departure.isoformat(),
-                "persons": 2,
+                "persons": guests,
             },
         )
         if avail is None:
@@ -250,6 +385,7 @@ class HyggeLive(MockTravel):
         # refundable / non-refundable rate split from each cabin's pricing_offers.
         live_price: dict[str, float] = {}
         offer_rates: dict[str, dict[str, float]] = {}
+        packages: dict[str, dict[str, Any]] = {}
         available: list = []
         for cabin in avail.get("available_cabins", []):
             slug = _ID_TO_SLUG.get(cabin.get("id"))
@@ -259,13 +395,11 @@ class HyggeLive(MockTravel):
             available.append(product)
             if cabin.get("price_per_night"):
                 live_price[slug] = float(cabin["price_per_night"])
-            rates: dict[str, float] = {}
-            for offer in cabin.get("pricing_offers", []):
-                total = offer.get("price")
-                if offer.get("type") in ("refundable", "nonrefundable") and total:
-                    rates[offer["type"]] = round(float(total) / nights)
-            if rates:
-                offer_rates[slug] = rates
+            quote = _read_offers(cabin.get("pricing_offers", []), nights)
+            if quote["rates"]:
+                offer_rates[slug] = quote["rates"]
+            if quote["package"]:
+                packages[slug] = quote["package"]
 
         ranked = rank_products(
             available,
@@ -287,9 +421,17 @@ class HyggeLive(MockTravel):
                 product.attributes["refundable_rate"] = str(rates["refundable"])
             if rates.get("nonrefundable"):
                 product.attributes["nonrefundable_rate"] = str(rates["nonrefundable"])
+            # The named package the quoted rate comes from, so the card and the assistant
+            # can say which one earned the discount rather than only showing a lower price.
+            package = packages.get(product.product_id)
+            if package:
+                product.attributes["package_name"] = package["name"]
+                product.attributes["package_rate_before"] = str(package["rate_before"])
+                product.attributes["package_discount_pct"] = str(package["discount_pct"])
             # The exact free-cancellation deadline is not exposed by the API — it is shown
             # at booking — so we do not assert one here (only that a refundable rate exists).
             product.attributes["quoted_for"] = f"{travel_date.isoformat()}..{departure.isoformat()}"
+        self._attach_ladder(results, await self._package_ladder(travel_date, guests))
         return results
 
 

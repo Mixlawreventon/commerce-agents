@@ -120,7 +120,9 @@ class StorefrontHost:
         # when the customer's message is in another language (place names, product ids).
         language = _LANGUAGE_NAMES.get((request.language or "").lower())
         if language:
-            message = f"[Reply in {language}, regardless of the language of this message.]\n{message}"
+            message = (
+                f"[Reply in {language}, regardless of the language of this message.]\n{message}"
+            )
         append_user_turn(record, message, "App events")
         return stream_turn(
             self.agent,

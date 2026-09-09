@@ -38,7 +38,10 @@ def build_shopping_config() -> ShoppingAgentConfig:
             "Cabins are date-bound: when the guest has named dates, pass the check-in "
             "date as an ISO filters.attributes['travel_date'] on every search — results "
             "and prices are quotes for those nights, not catalog constants. Prices are "
-            "per night in Polish zloty (PLN)."
+            "per night in Polish zloty (PLN). Ask how many people are coming and pass the "
+            "head count as filters.attributes['guests']: a child counts the same as an "
+            "adult, except a baby under one year sleeping with its parents, who is not "
+            "counted at all."
         ),
     )
 
