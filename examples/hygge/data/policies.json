@@ -1,52 +1,47 @@
 {
+  "_comment": "Customer-facing rules quoted from the Osada Hygge property & booking regulamin (hyggeosada.pl/regulamin-obiektu-i-rezerwacji). Written in Polish (source language); the assistant answers in the guest's selected language. Where the regulamin is silent (e.g. climate tax, security deposit, minimum nights), we do not invent — the assistant points to booking/contact.",
   "policies": [
     {
-      "policy_id": "cancellation-refundable",
-      "title": "Refundable vs non-refundable rates",
+      "policy_id": "anulacja",
+      "title": "Anulacja i zwrot przedpłaty",
       "category": "cancellations",
-      "content": "Each cabin is offered on two rates. A refundable rate costs a little more and lets you cancel free of charge up to the deadline shown for that rate; a non-refundable rate is cheaper but is not refunded if you cancel. The exact free-cancellation deadline and any charge are shown for your dates during booking and in your confirmation. If you are unsure which rate you booked or want to change dates, contact us by phone or email and we will help."
+      "content": "Wpłacona przedpłata jest zwrotna, jeśli anulujesz rezerwację najpóźniej na 7 dni przed przyjazdem. Przy anulacji później niż 7 dni przed przyjazdem oraz w przypadku niepojawienia się (no-show) przedpłata nie jest zwracana. W razie rezygnacji z pobytu w jego trakcie Osada nie zwraca opłaty za skrócony pobyt. Uwaga: część ofert cenowych jest bezzwrotna — ich warunki są pokazane przy wyborze oferty w trakcie rezerwacji. W razie wątpliwości prosimy o kontakt telefoniczny lub mailowy."
     },
     {
-      "policy_id": "booking-and-deposit",
-      "title": "Booking and payment",
+      "policy_id": "rezerwacja-i-platnosc",
+      "title": "Rezerwacja i płatność",
       "category": "payments",
-      "content": "Booking and payment are completed in the Osada Hygge reservation system. Prices are shown per night in Polish zloty (PLN) and cover the whole cabin. The amount due at booking, the balance, and any security deposit are shown at the final step and in your confirmation. For questions about payment, contact us by phone or email."
+      "content": "Rezerwację potwierdza wpłata zaliczki — jej wysokość i termin płatności są podane indywidualnie w potwierdzeniu rezerwacji. Rezerwacja zyskuje status gwarantowanej po wpłacie zaliczki w terminie wskazanym w potwierdzeniu. Ceny podawane są za dobę, za cały domek, w złotych (PLN). Płatność i szczegóły finalizowane są w systemie rezerwacyjnym; w razie pytań prosimy o kontakt."
     },
     {
-      "policy_id": "changes-and-rebooking",
-      "title": "Changes and rebooking",
-      "category": "changes",
-      "content": "Moving your dates is free up to 48 hours before check-in — you pay only the difference if the new nights cost more (weekends and holidays are priced higher). Inside 48 hours, one date change per booking is allowed subject to availability and any rate difference. Switching to a different cabin is treated as a date change as long as the new cabin is available for your nights."
-    },
-    {
-      "policy_id": "checkin-checkout",
-      "title": "Check-in and check-out",
+      "policy_id": "doba-hotelowa",
+      "title": "Doba hotelowa i cisza nocna",
       "category": "stay",
-      "content": "Check-in is from 15:00 and check-out is by 11:00. Directions to Osada Hygge and check-in details are sent before arrival. Early check-in or late check-out can sometimes be arranged depending on the day's bookings — just ask."
+      "content": "Doba hotelowa trwa od godz. 15:00 do godz. 11:00 dnia następnego. W Osadzie obowiązuje cisza nocna w godz. 22:00–6:00. Wskazówki dojazdu i szczegóły zameldowania wysyłamy przed przyjazdem; wcześniejsze zameldowanie lub późniejsze wymeldowanie można niekiedy uzgodnić — wystarczy zapytać."
     },
     {
-      "policy_id": "whats-included",
-      "title": "What's included in every cabin",
-      "category": "stay",
-      "content": "Each cabin is booked whole and comes with a full kitchen, bed linen and towels, free Wi-Fi, underfloor heating, free parking by the cabin, and a private terrace. Fika and Lagom add a private jacuzzi on the terrace. Firewood for the fire pit and a starter set of coffee and tea are provided. Cots and high chairs are available on request at no charge."
-    },
-    {
-      "policy_id": "pets",
-      "title": "Bringing your dog",
+      "policy_id": "zwierzeta",
+      "title": "Pobyt ze zwierzętami",
       "category": "pets",
-      "content": "Well-behaved dogs are welcome in every cabin at no extra charge — Osada Hygge sits inside the Gostynin-Wloclawek forest, so it's a great base for walks. Please keep dogs off the beds and jacuzzi, clean up on the grounds, and never leave a dog alone in the cabin. Let us know at booking how many dogs are coming so we can leave out bowls and a blanket."
+      "content": "Za zgodą gospodarza Osada akceptuje pobyt małych, niegroźnych zwierząt domowych za dodatkową opłatą 140 zł za cały pobyt. Pobyt zwierzęcia należy zgłosić przy rezerwacji, a na terenie Osady trzymać je na smyczy."
     },
     {
-      "policy_id": "occupancy-and-guests",
-      "title": "Guests and occupancy",
+      "policy_id": "zasady-i-oplaty-dodatkowe",
+      "title": "Zasady pobytu i opłaty dodatkowe",
       "category": "stay",
-      "content": "The rate covers the cabin's stated capacity: Fika, Lagom, Gron and Hyggelig sleep up to four, and Lykke sleeps two. Occupancy above the stated number is not permitted for safety and insurance reasons. Events and parties are not allowed — Osada Hygge is a quiet forest retreat, not an event venue."
+      "content": "Domki są w całości dla niepalących — za złamanie zakazu palenia Gość zostanie obciążony opłatą 500 zł. Dezaktywacja czujki dymu również wiąże się z karą 500 zł. Za nieodnalezione klucze pobieramy 50 zł. Kosztowności można oddać do depozytu w recepcji. Prosimy o poszanowanie ciszy nocnej i spokoju leśnego otoczenia."
     },
     {
-      "policy_id": "getting-there",
-      "title": "Getting to Osada Hygge",
+      "policy_id": "co-w-cenie",
+      "title": "Co obejmuje wynajem domku",
+      "category": "stay",
+      "content": "Każdy domek wynajmowany jest w całości i ma w pełni wyposażoną kuchnię, pościel i ręczniki, bezpłatne Wi-Fi, ogrzewanie, bezpłatny parking przy domku oraz prywatny taras. Domki Fika i Lagom mają dodatkowo prywatne jacuzzi na tarasie. Cena obejmuje pobyt do liczby osób wskazanej dla danego domku przy rezerwacji."
+    },
+    {
+      "policy_id": "dojazd",
+      "title": "Dojazd i kontakt",
       "category": "location",
-      "content": "Osada Hygge is at Krzywie 44D, 09-500 Gostynin, in the Gostynin-Wloclawek Landscape Park — roughly a two-hour drive from Warsaw and under an hour from Plock. There is free parking beside each cabin, and forest and lake are on the doorstep. Exact directions are sent before arrival. Phone: +48 691 661 677, e-mail: hej@osadahygge.pl."
+      "content": "Osada Hygge znajduje się pod adresem Krzywie 44D, 09-500 Gostynin, w Gostynińsko-Włocławskim Parku Krajobrazowym — około 2 godziny jazdy od Warszawy i niecałą godzinę od Płocka. Przy każdym domku jest bezpłatny parking, a las i jezioro są tuż obok. Telefon: +48 691 661 677, e-mail: hej@osadahygge.pl."
     }
   ]
 }
