@@ -46,7 +46,26 @@ type Key =
   | "feedbackSend"
   | "feedbackThanks"
   | "privacyNote"
-  | "bookAt";
+  | "bookAt"
+  | "openingsTitle"
+  | "openingsWeekend"
+  | "openingsMidweek"
+  | "openingsNights"
+  | "openingsCabinsLeft"
+  | "openingsPrompt"
+  | "cabinsTitle"
+  | "cabinsFrom"
+  | "cabinPrompt"
+  | "offersTitle"
+  | "offersCode"
+  | "offersStay"
+  | "offersBookBy"
+  | "offerPrompt"
+  | "homeUnavailable"
+  | "promoTitle"
+  | "promoCopy"
+  | "promoCopied"
+  | "promoHint";
 
 const DICT: Record<Lang, Record<Key, string>> = {
   pl: {
@@ -81,6 +100,25 @@ const DICT: Record<Lang, Record<Key, string>> = {
     feedbackThanks: "Dziękujemy — przekazaliśmy to dalej.",
     privacyNote: "Rozmowy z asystentem zapisujemy, żeby go ulepszać. Nie podawaj danych karty ani hasła.",
     bookAt: "Rezerwuj w idobooking",
+    openingsTitle: "Najbliższe wolne terminy",
+    openingsWeekend: "Weekend",
+    openingsMidweek: "W tygodniu",
+    openingsNights: "{n} noce",
+    openingsCabinsLeft: "{n} wolnych domków",
+    openingsPrompt: "Szukam domku dla 2 osób od {arrival} do {departure} ({kind}). Co jest wolne i w jakiej cenie?",
+    cabinsTitle: "Domki",
+    cabinsFrom: "od {price}",
+    cabinPrompt: "Opowiedz o domku {name} i podaj najbliższy wolny termin z ceną.",
+    offersTitle: "Oferty",
+    offersCode: "Kod",
+    offersStay: "pobyt {from} – {to}",
+    offersBookBy: "rezerwacja do {date}",
+    offerPrompt: "Jak skorzystać z oferty {title}? Jakie terminy obejmuje?",
+    homeUnavailable: "Nic jeszcze nie wybrano.\nZapytaj Asystenta Hygge o wolny domek.",
+    promoTitle: "Twój kod rabatowy",
+    promoCopy: "Kopiuj",
+    promoCopied: "Skopiowano",
+    promoHint: "Wklej kod w polu kodu rabatowego w formularzu rezerwacji.",
   },
   en: {
     viewAssistant: "Assistant",
@@ -114,6 +152,25 @@ const DICT: Record<Lang, Record<Key, string>> = {
     feedbackThanks: "Thank you — we've passed this on.",
     privacyNote: "We keep these conversations to improve the assistant. Please don't share card details or passwords.",
     bookAt: "Book on idobooking",
+    openingsTitle: "Nearest open dates",
+    openingsWeekend: "Weekend",
+    openingsMidweek: "Midweek",
+    openingsNights: "{n} nights",
+    openingsCabinsLeft: "{n} cabins free",
+    openingsPrompt: "I'm looking for a cabin for 2 from {arrival} to {departure} ({kind}). What's free and at what price?",
+    cabinsTitle: "Cabins",
+    cabinsFrom: "from {price}",
+    cabinPrompt: "Tell me about the {name} cabin and name its nearest free dates with a price.",
+    offersTitle: "Offers",
+    offersCode: "Code",
+    offersStay: "stays {from} – {to}",
+    offersBookBy: "book by {date}",
+    offerPrompt: "How do I use the {title} offer? Which dates does it cover?",
+    homeUnavailable: "Nothing chosen yet.\nAsk the Hygge Assistant about a free cabin.",
+    promoTitle: "Your discount code",
+    promoCopy: "Copy",
+    promoCopied: "Copied",
+    promoHint: "Paste the code into the discount code field of the booking form.",
   },
   de: {
     viewAssistant: "Assistent",
@@ -147,6 +204,25 @@ const DICT: Record<Lang, Record<Key, string>> = {
     feedbackThanks: "Danke — wir geben das weiter.",
     privacyNote: "Wir speichern diese Gespräche, um den Assistenten zu verbessern. Bitte keine Kartendaten oder Passwörter.",
     bookAt: "Auf idobooking buchen",
+    openingsTitle: "Nächste freie Termine",
+    openingsWeekend: "Wochenende",
+    openingsMidweek: "Unter der Woche",
+    openingsNights: "{n} Nächte",
+    openingsCabinsLeft: "{n} Häuschen frei",
+    openingsPrompt: "Ich suche ein Häuschen für 2 vom {arrival} bis {departure} ({kind}). Was ist frei und zu welchem Preis?",
+    cabinsTitle: "Häuschen",
+    cabinsFrom: "ab {price}",
+    cabinPrompt: "Erzähl mir vom Häuschen {name} und nenne den nächsten freien Termin mit Preis.",
+    offersTitle: "Angebote",
+    offersCode: "Code",
+    offersStay: "Aufenthalt {from} – {to}",
+    offersBookBy: "buchbar bis {date}",
+    offerPrompt: "Wie nutze ich das Angebot {title}? Welche Termine umfasst es?",
+    homeUnavailable: "Noch nichts ausgewählt.\nFrag den Hygge-Assistenten nach einem freien Häuschen.",
+    promoTitle: "Dein Rabattcode",
+    promoCopy: "Kopieren",
+    promoCopied: "Kopiert",
+    promoHint: "Füge den Code im Feld für den Rabattcode des Buchungsformulars ein.",
   },
 };
 

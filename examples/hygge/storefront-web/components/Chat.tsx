@@ -11,12 +11,13 @@ import ReplyFeedback from "./ReplyFeedback";
 
 const WIDE = new Set(["comparison", "itinerary"]);
 
-export default function Chat({ chat, home, lang }: { chat: AgentTurn; home: ReactNode; lang: Lang }) {
+export default function Chat({ chat, home, lang, fullWidth = false }: { chat: AgentTurn; home: ReactNode; lang: Lang; fullWidth?: boolean }) {
   return (
     <ChatShell
       chat={chat}
       home={home}
       wide={WIDE}
+      fullWidth={fullWidth}
       renderBlock={(segment) => <GenerativeBlock block={segment.block} status={segment.status} />}
       renderFooter={(_item, index) => <ReplyFeedback lang={lang} messageIndex={index} />}
     />

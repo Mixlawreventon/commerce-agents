@@ -123,7 +123,8 @@ export function StoreShell<V extends string>({
       <div className="flex h-dvh flex-col text-(--ink)">
         <header className="flex h-[58px] shrink-0 items-center gap-2 border-b border-(--line) bg-(--chrome) px-3 sm:gap-5 sm:px-5">
           <div className="flex shrink-0 items-center">{brand}</div>
-          <nav className="flex min-w-0 items-center gap-1" aria-label="Views">
+          {/* One view needs no switcher: the bar shows the brand alone. */}
+          <nav className={`flex min-w-0 items-center gap-1 ${views.length > 1 ? "" : "hidden"}`} aria-label="Views">
             {views.map((item) => {
               const active = item.id === view;
               return (

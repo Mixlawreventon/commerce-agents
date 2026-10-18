@@ -105,6 +105,10 @@ export interface CheckoutHandoff {
   url: string;
   label?: string;
   seller?: string;
+  /** A discount code the guest types into the booking form; idobooking prices it. */
+  promo_code?: string | null;
+  /** What the code is worth, as the operator wrote it ("-15%"). */
+  promo_label?: string | null;
 }
 
 export interface CheckoutPayload {
@@ -120,4 +124,35 @@ export interface ItineraryPayload {
   title: string;
   travel_dates?: string;
   days: { label: string; note?: string; products: Product[] }[];
+}
+
+// --- GET /api/home: the stay panel's empty state ---
+
+export interface HomeOpening {
+  kind: "weekend" | "midweek";
+  arrival: string;
+  departure: string;
+  nights: number;
+  price_from: number;
+  cabins_left: number;
+}
+
+export interface HomeCabin {
+  product_id: string;
+  name: string;
+  price_from: number;
+  image_url?: string | null;
+  hot_tub: boolean;
+  max_guests?: string | null;
+}
+
+export type HomeOffer =
+  | { kind: "promotion"; title: string; detail?: string | null; stay_from?: string | null; stay_to?: string | null }
+  | { kind: "code"; code: string; discount_label: string; stay_from?: string | null; stay_to?: string | null; valid_to?: string | null };
+
+export interface HomeOverview {
+  openings: HomeOpening[];
+  cabins: HomeCabin[];
+  offers: HomeOffer[];
+  generated_for: string;
 }

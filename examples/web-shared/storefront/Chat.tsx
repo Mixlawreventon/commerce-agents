@@ -16,6 +16,7 @@ export function Chat({
   renderPending,
   renderFooter,
   wide,
+  fullWidth = false,
 }: {
   chat: AgentTurn;
   home: ReactNode;
@@ -24,12 +25,14 @@ export function Chat({
   renderFooter?: TranscriptProps["renderFooter"];
   /** Components that may extend past the text measure when the page has room. */
   wide?: ReadonlySet<string>;
+  /** Let the conversation fill the page instead of the reading measure. */
+  fullWidth?: boolean;
 }) {
   const { scrollRef, onScroll, showLatest, jumpToLatest } = useStickToBottom(chat.items, chat.busy);
   return (
     <div className="relative h-full">
       <div ref={scrollRef} onScroll={onScroll} className="panel-scroll h-full overflow-y-auto px-4 pb-8 pt-6 sm:px-6">
-        <div className="mx-auto flex max-w-[760px] flex-col gap-5 text-[15.5px]">
+        <div className={`mx-auto flex flex-col gap-5 text-[15.5px] ${fullWidth ? "max-w-[1100px]" : "max-w-[760px]"}`}>
           {chat.items.length === 0 ? (
             home
           ) : (

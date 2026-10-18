@@ -8,7 +8,7 @@ tools live in the prompt or a skill."""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from commerce_common.execution import LOAD_SKILL, with_status
@@ -73,11 +73,13 @@ def build_tools(
     config: ShoppingAgentConfig,
     skill_names: list[str],
     extra_presentation_tools: Sequence[PresentationExtension] = (),
+    extra_tools: Sequence[Mapping[str, Any]] = (),
 ) -> list[dict[str, Any]]:
     """The tool list for one deployment: built-ins in a fixed order, less the systems the
     config switches off, then the deployment's presentation extensions in the order
-    given, then web search when enabled. Every tool but the presentation tools and web
-    search takes the optional ``status`` line first."""
+    given, then its own read tools (``extra_tools``, plain tool definitions a
+    deployment's ``executor_class`` handles), then web search when enabled. Every tool
+    but the presentation tools and web search takes the optional ``status`` line first."""
 
     tools: list[dict[str, Any]] = [
         {
@@ -640,6 +642,11 @@ def build_tools(
             )
         base_names.add(extension.name)
         tools.append(extension.tool_definition())
+    for extra in extra_tools:
+        if extra["name"] in base_names:
+            raise ValueError(f"extra tool {extra['name']!r} collides with a built-in tool")
+        base_names.add(extra["name"])
+        tools.append(with_status(dict(extra), _STATUS_READER))
 
     if config.enable_web_search:
         tools.append(

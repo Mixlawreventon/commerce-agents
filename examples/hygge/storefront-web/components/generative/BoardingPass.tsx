@@ -5,8 +5,10 @@
 
 import type { CSSProperties } from "react";
 import { formatPrice, quantityLabel } from "@/lib/format";
+import { useLang } from "@/lib/i18n";
 import type { CheckoutPayload } from "@/lib/types";
 import { PostcardWindow } from "../PostcardWindow";
+import PromoCode from "./PromoCode";
 import { BODY, CARD, DISPLAY, META, display } from "./shared";
 import { safeHandoffs } from "web-shared";
 
@@ -34,9 +36,12 @@ const BARCODE: CSSProperties = {
 };
 
 export default function BoardingPass({ payload }: { payload: CheckoutPayload }) {
+  const [lang] = useLang();
   const cart = payload.cart;
   const handoffs = safeHandoffs(payload.handoffs);
   const items = cart?.items ?? [];
+  // One code per card: the backend puts the session's code on every hand-off it applies to.
+  const promo = (payload.handoffs ?? []).find((h) => h.promo_code);
   return (
     <section className="al-reveal" data-checkout-card>
       <div className="flex overflow-hidden" style={CARD}>
@@ -153,6 +158,7 @@ export default function BoardingPass({ payload }: { payload: CheckoutPayload }) 
           >
             Nothing is charged here. Payment happens when you check out.
           </p>
+          {promo?.promo_code ? <PromoCode code={promo.promo_code} label={promo.promo_label} lang={lang} /> : null}
         </div>
 
         <div

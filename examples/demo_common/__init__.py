@@ -19,7 +19,7 @@ from .sessions import (
     UnknownSessionError,
     session_dependency,
 )
-from .storefront import CartAddRequest, StorefrontHost, build_storefront_host
+from .storefront import CartAddRequest, StorefrontHost, build_storefront_host, require_admin
 
 __all__ = [
     "REPO_ROOT",
@@ -36,6 +36,7 @@ __all__ = [
     "build_storefront_host",
     "host_approval_default",
     "load_demo_env",
+    "require_admin",
     "session_dependency",
     "spawn_background",
 ]

@@ -11,7 +11,7 @@ import HomeView from "@/components/views/HomeView";
 import { api, UNREACHABLE } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import { type Lang, LANGS, t, useLang } from "@/lib/i18n";
-import { guestProfileId, LIGHT_UI } from "@/lib/light";
+import { guestProfileId, LIGHT_UI, SHOW_SIDEBAR } from "@/lib/light";
 import { NOUNS, TripThumb } from "@/lib/orders";
 import type { CartPayload } from "@/lib/types";
 
@@ -89,9 +89,10 @@ export default function StorefrontPage() {
     if (session.sessionId) void api.fetchCart<CartPayload>().then((next) => next && setCart(next));
   }, [session.sessionId]);
 
+  // Without the sidebar the conversation is the one view, so the bar shows no switcher.
   const views: StoreView<View>[] = [
     { id: "assistant", label: t(lang, "viewAssistant"), icon: "spark" },
-    ...(LIGHT_UI ? [] : [{ id: "trips" as const, label: t(lang, "viewStays"), icon: "plane" as const }]),
+    ...(LIGHT_UI || !SHOW_SIDEBAR ? [] : [{ id: "trips" as const, label: t(lang, "viewStays"), icon: "plane" as const }]),
   ];
   // Light mode faces real guests, who are nobody the seeded profile knows.
   const shopper = LIGHT_UI ? { name: t(lang, "guestName") } : (session.shopper ?? { name: "Guest" });
@@ -120,9 +121,9 @@ export default function StorefrontPage() {
     >
       {/* The conversation stays mounted under the other view so its cards keep their state. */}
       <div className={view === "assistant" ? "h-full" : "hidden"}>
-        <Chat chat={chat} lang={lang} home={<HomeView lang={lang} travelerName={shopper.name} trips={trips} tripsFailed={tripsFailed} onSeeTrips={() => setView("trips")} light={LIGHT_UI} />} />
+        <Chat chat={chat} lang={lang} fullWidth={!SHOW_SIDEBAR} home={<HomeView lang={lang} travelerName={shopper.name} trips={trips} tripsFailed={tripsFailed} onSeeTrips={() => setView("trips")} light={LIGHT_UI} />} />
       </div>
-      {view === "trips" && !LIGHT_UI ? (
+      {view === "trips" && !LIGHT_UI && SHOW_SIDEBAR ? (
         <OrdersView
           orders={trips}
           failed={tripsFailed}

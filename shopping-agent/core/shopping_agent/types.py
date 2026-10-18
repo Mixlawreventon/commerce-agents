@@ -92,6 +92,10 @@ class CheckoutHandoff(BaseModel):
     url: str
     label: str | None = None  # button text; the host has a default
     seller: str | None = None  # set when the cart hands off per seller
+    # A code the customer enters by hand in the hosted checkout, with what it is worth as
+    # the merchant words it; the hosted checkout prices it, this card only shows it.
+    promo_code: str | None = None
+    promo_label: str | None = None
 
 
 class Cart(BaseModel):

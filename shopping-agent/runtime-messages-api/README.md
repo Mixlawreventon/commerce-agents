@@ -55,7 +55,9 @@ stream error propagates out of `stream_turn`; the host catches it and emits an `
 - With `close_on_presentation` on, a round that `round_closes_turn`
   (`commerce_common/turn.py`) accepts ends the turn there, so `messages` can end on tool
   results.
-- `extra_presentation_tools` appends a deployment's `PresentationExtension`s to the tool array.
+- `extra_presentation_tools` appends a deployment's `PresentationExtension`s to the tool array;
+  `extra_tools` appends its own read tools (plain tool definitions), which its
+  `executor_class` handles.
 - `agent.memory` is the deployment's `MemoryRuntime`; a host with its own memory routes
   reads and deletes through `agent.memory.store`.
 
