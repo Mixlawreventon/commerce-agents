@@ -18,7 +18,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any, cast
 
@@ -76,7 +76,8 @@ class ShoppingAgent:
     """One deployment of the agent. ``memory`` is its :class:`MemoryRuntime`; a host
     with its own memory routes reads and writes through ``memory.store``.
     ``executor_class`` is the seam for a deployment's own :class:`ShoppingToolExecutor`
-    subclass (its own ``domain_error`` mapping or result wording)."""
+    subclass (its own ``domain_error`` mapping or result wording, or the handlers for
+    ``extra_tools``, the deployment's own read tools appended to the tool list)."""
 
     def __init__(
         self,
@@ -89,6 +90,7 @@ class ShoppingAgent:
         memory_write_filter: MemoryWriteFilter | None = None,
         client: AsyncAnthropic | None = None,
         extra_presentation_tools: Sequence[PresentationExtension] = (),
+        extra_tools: Sequence[Mapping[str, Any]] = (),
         executor_class: type[ShoppingToolExecutor] = ShoppingToolExecutor,
     ) -> None:
         if skills is None:
@@ -113,7 +115,9 @@ class ShoppingAgent:
         self._static_system = build_static_system(self.config, self.skills)
         self._tools = with_tool_cache_control(
             with_eager_input(
-                build_tools(self.config, self.skills.names, self.extra_presentation_tools),
+                build_tools(
+                    self.config, self.skills.names, self.extra_presentation_tools, extra_tools
+                ),
                 self._partial_ui_tools,
             )
         )

@@ -16,6 +16,13 @@
 // that silently reads as off is worse than one that is forgiving about whitespace.
 export const LIGHT_UI = process.env.NEXT_PUBLIC_LIGHT_UI?.trim() === "1";
 
+/**
+ * The left-hand navigation (the views beside the brand: Assistant, Stays). Off by default:
+ * the conversation and the stay panel take the full width, and the stays view is reached
+ * through the conversation. `NEXT_PUBLIC_SHOW_SIDEBAR=1` brings it back; read at build time.
+ */
+export const SHOW_SIDEBAR = process.env.NEXT_PUBLIC_SHOW_SIDEBAR?.trim() === "1";
+
 const GUEST_KEY = "hygge-guest";
 
 /**

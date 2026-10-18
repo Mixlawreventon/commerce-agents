@@ -105,6 +105,19 @@ class ResetRequest(BaseModel):
     purge_memory: bool = False
 
 
+def require_admin(authorization: str = Header(default="")) -> None:
+    """Guards the routes that read guests' words back, and a vertical's own admin routes.
+    Unset ``ADMIN_TOKEN`` means the routes answer 404: an example must not ship a readable
+    transcript store, and a deployment that forgot to set a token must not quietly serve
+    one either."""
+    token = os.environ.get("ADMIN_TOKEN", "").strip()
+    if not token:
+        raise HTTPException(status_code=404, detail="Not Found")
+    offered = authorization.removeprefix("Bearer ").strip()
+    if not secrets.compare_digest(offered, token):
+        raise HTTPException(status_code=401, detail="Bad or missing admin token")
+
+
 class StorefrontHost:
     """The constructed storefront: the app plus the handles a vertical's own routes use."""
 
@@ -117,11 +130,14 @@ class StorefrontHost:
         env_hint: str,
         cart_extras: Callable[[StorefrontRecord], dict[str, Any]] | None,
         on_startup: Sequence[Callable[[], Awaitable[None]]] = (),
+        on_shutdown: Sequence[Callable[[], Awaitable[None]]] = (),
     ) -> None:
         # Off unless DATABASE_URL names a Postgres; see analytics.EventLog. Built before
         # the app so its pool opens inside the running loop, with the other startup steps.
         self.events = EventLog()
-        self.app = build_app(title, [*on_startup, self.events.open], [self.events.close])
+        self.app = build_app(
+            title, [*on_startup, self.events.open], [self.events.close, *on_shutdown]
+        )
         self.backend = backend
         self.agent = agent
         self.memory_store = cast(MemoryStore, agent.memory.store)
@@ -264,11 +280,15 @@ def build_storefront_host(
     product_detail: Callable[[ProductDetails], dict[str, Any]] | None = None,
     cart_extras: Callable[[StorefrontRecord], dict[str, Any]] | None = None,
     before_turn: Callable[[], None] | None = None,
+    on_startup: Sequence[Callable[[], Awaitable[None]]] = (),
+    on_shutdown: Sequence[Callable[[], Awaitable[None]]] = (),
 ) -> StorefrontHost:
     """Seed memory, then build the app with the shared routes. ``product_of`` and
     ``product_detail`` let a vertical stamp live state onto catalog reads or enrich the
     detail payload; ``cart_extras`` adds keys to every cart payload; ``before_turn`` runs
-    ahead of each chat turn (a vertical delivering server-side events as app events)."""
+    ahead of each chat turn (a vertical delivering server-side events as app events);
+    ``on_startup`` and ``on_shutdown`` run inside the app's lifespan, after the memory
+    seed and before the event log closes (a vertical's own stores)."""
     host = StorefrontHost(
         title=title,
         backend=backend,
@@ -276,7 +296,11 @@ def build_storefront_host(
         env_hint=f"examples/{example_root.name}/.env",
         cart_extras=cart_extras,
         # Seed the memory fixtures when the app starts, inside its event loop.
-        on_startup=[lambda: memory_seeder.seed_at_boot(cast(MemoryStore, agent.memory.store))],
+        on_startup=[
+            lambda: memory_seeder.seed_at_boot(cast(MemoryStore, agent.memory.store)),
+            *on_startup,
+        ],
+        on_shutdown=on_shutdown,
     )
     app = host.app
     read_product = product_of or backend.product
@@ -327,22 +351,11 @@ def build_storefront_host(
         )
         return {"recorded": True}
 
-    def _admin(authorization: str = Header(default="")) -> None:
-        """Guards the routes that read guests' words back. Unset ``ADMIN_TOKEN`` means the
-        routes answer 404: an example must not ship a readable transcript store, and a
-        deployment that forgot to set a token must not quietly serve one either."""
-        token = os.environ.get("ADMIN_TOKEN", "").strip()
-        if not token:
-            raise HTTPException(status_code=404, detail="Not Found")
-        offered = authorization.removeprefix("Bearer ").strip()
-        if not secrets.compare_digest(offered, token):
-            raise HTTPException(status_code=401, detail="Bad or missing admin token")
-
-    @app.get("/api/admin/stats", dependencies=[Depends(_admin)])
+    @app.get("/api/admin/stats", dependencies=[Depends(require_admin)])
     async def admin_stats(days: int = 30) -> dict:
         return await host.events.summary(days)
 
-    @app.get("/api/admin/conversations", dependencies=[Depends(_admin)])
+    @app.get("/api/admin/conversations", dependencies=[Depends(require_admin)])
     async def admin_conversations(limit: int = 20) -> dict:
         return {"conversations": await host.events.conversations(limit)}
 

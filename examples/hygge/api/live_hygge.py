@@ -382,11 +382,39 @@ class HyggeLive(MockTravel):
             url = self._booking_url(
                 cabin_id, arrival, item.quantity, guests
             ) or product.attributes.get("booking_url")
-            if url:
-                handoffs.append(
-                    CheckoutHandoff(url=url, label=f"Zarezerwuj w idobooking — {name}", seller=name)
-                )
+            if not url:
+                continue
+            handoff = CheckoutHandoff(
+                url=url, label=f"Zarezerwuj w idobooking — {name}", seller=name
+            )
+            # A code proposed in this conversation rides on the card, for the guest to
+            # type into the booking form; idobooking prices it. Counted as a hand-off.
+            code = await self._handoff_code(session, arrival, item.quantity, cabin_id)
+            if code is not None:
+                handoff.promo_code = code.code
+                handoff.promo_label = code.discount_label
+            handoffs.append(handoff)
         return handoffs
+
+    async def _handoff_code(
+        self,
+        session: ShoppingSessionContext,
+        arrival: str | None,
+        nights: int,
+        cabin_id: str | None,
+    ):
+        if self.offer_desk is None:
+            return None
+        start = end = None
+        if arrival:
+            try:
+                start = date.fromisoformat(arrival)
+                end = start + timedelta(days=max(nights, 1))
+            except ValueError:
+                start = end = None
+        return await self.offer_desk.handoff(
+            session.session_id, session.user_id, start, end, cabin_id
+        )
 
     def _booking_url(
         self, cabin_id: str | None, arrival: str | None, nights: int, guests: int

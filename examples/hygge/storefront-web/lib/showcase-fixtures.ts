@@ -282,6 +282,15 @@ export const SHOWCASE = {
   checkout: {
     note: "Three nights at ACME Guesthouses, a Sintra day, and a fado evening for two — confirmation lands by email within a minute of booking.",
     fulfillment_method: "delivery" as const,
+    // The hand-off carries the code the conversation proposed; the guest types it into the form.
+    handoffs: [
+      {
+        url: "https://client9681.idobooking.com/book-now/booking/defaultchoice/currency/1/language/1?ob[13]",
+        label: "Zarezerwuj w idobooking — Lagom",
+        promo_code: "JESIEN15",
+        promo_label: "-15%",
+      },
+    ],
     cart: {
       items: [
         {

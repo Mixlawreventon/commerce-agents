@@ -71,13 +71,37 @@ real deployment puts its own auth in front.
 - Booking hand-off: each cabin card links to its idobooking widget, tagged
   `utm_source=osada-hygge&utm_medium=assistant&utm_campaign=hygge-agent` so the booking
   system's own analytics attributes the visit.
+- Discount codes: idobooking has no API for codes, so an operator creates a code in the
+  idobooking panel and mirrors it here. `api/discount_codes.py` holds the record
+  (`DiscountCode`: the fields that must match the panel, then the assistant's own rules:
+  `active`, `announceable`, `trigger_signals`, `priority`, `max_per_session`,
+  `notes_for_agent`), the rule of which code a stay earns (`eligible_codes`), the store
+  (memory, or the `DATABASE_URL` Postgres through `PostgresDiscountCodeStore`), and
+  `OfferDesk`, which runs the rule per session, keeps the per-session cap, and records
+  `offer_proposed` and `offer_handoff` in the event log. `api/offers.py` is the
+  `get_eligible_offers` tool the model calls (`HyggeToolExecutor`, passed as
+  `executor_class`, with the tool as `extra_tools`) and the operator's CRUD under
+  `/api/admin/discount-codes`. The checkout card's hand-off carries the first code
+  proposed in the conversation as `promo_code`, for the guest to type into the booking
+  form; idobooking prices it. `storefront-web/app/admin` has the "Kody rabatowe" tab, with
+  proposed, hand-off and conversion columns, and a with-code / without-code filter over
+  the conversations.
+- `api/home.py`: `GET /api/home`, what the stay panel shows before anything is chosen:
+  the nearest open weekends and midweek stays with a price (from the availability
+  calendar), the five cabins with their lowest rate, and the offers on (idobooking's
+  promotions and the announceable codes). `storefront-web/components/StayOpenings.tsx`
+  renders it; a tile's click is a ready question to the assistant.
 - `api/agent_config.py`: the shopping config (brand, warm Scandinavian voice, PLN, and a
-  real model id via `SHOPPING_MODEL`) and the merchant config.
+  real model id via `SHOPPING_MODEL`) and the merchant config, including the pricing
+  ladder (full price, then a package or announceable code, then a quiet code only after a
+  signal) and the rule that urgency comes only from the availability data.
 - `api/main.py`: the storefront host with the itinerary extension and an in-memory store
   that `MemorySeeder` refills from `data/memory-seed.json` on boot.
 - `storefront-web/`: this example's cards, views, and tokens, over `../web-shared/`.
   `lib/light.ts` reads `NEXT_PUBLIC_LIGHT_UI=1`, the trimmed storefront for real
-  guests: no seeded shopper name, no stays tab or arriving panel, no checkout.
+  guests: no seeded shopper name, no stays tab or arriving panel, no checkout; and
+  `NEXT_PUBLIC_SHOW_SIDEBAR=1`, which brings back the view navigation beside the brand
+  (off by default: the conversation and the stay panel take the full width).
 
 ## Data
 

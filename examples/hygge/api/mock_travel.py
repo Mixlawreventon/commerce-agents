@@ -218,6 +218,10 @@ class MockTravel(StorefrontBackend):
         }
         self._carts = SessionCarts()
         self._trip_plans: dict[str, TripPlan] = {}
+        # The discount-code desk (``discount_codes.OfferDesk``), set by the host; the
+        # ``get_eligible_offers`` tool and checkout read it, so a backend without one
+        # offers no codes.
+        self.offer_desk: Any = None
 
     # ------------------------------------------------------------------
     # Catalog
@@ -388,6 +392,8 @@ class MockTravel(StorefrontBackend):
     def reset_session(self, session_id: str) -> None:
         self._carts.reset(session_id)
         self._trip_plans.pop(session_id, None)
+        if self.offer_desk is not None:
+            self.offer_desk.reset(session_id)
 
     # ------------------------------------------------------------------
     # Traveler, bookings, help content, fulfillment

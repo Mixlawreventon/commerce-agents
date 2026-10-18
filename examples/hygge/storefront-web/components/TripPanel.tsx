@@ -9,6 +9,7 @@ import { fetchProducts } from "@/lib/api";
 import { formatPrice, productCity, productPlace, quantityLabel, shortDate } from "@/lib/format";
 import type { CartItem, CartPayload, Product } from "@/lib/types";
 import { PostcardWindow } from "./PostcardWindow";
+import StayOpenings from "./StayOpenings";
 
 /** Stays count nights, experiences count guests; flights get no stepper. */
 function quantityNoun(item: CartItem): "night" | "guest" | null {
@@ -135,8 +136,9 @@ export default function TripPanel({
       count={bagCount(lang, count)}
       isEmpty={count === 0}
       empty={
-        <>
-          {t(lang, "bagEmpty")
+        <StayOpenings
+          lang={lang}
+          fallback={t(lang, "bagEmpty")
             .split("\n")
             .map((line, index) => (
               <span key={line}>
@@ -144,7 +146,7 @@ export default function TripPanel({
                 {line}
               </span>
             ))}
-        </>
+        />
       }
       footer={
         <>
