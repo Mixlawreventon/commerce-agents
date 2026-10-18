@@ -30,11 +30,11 @@ const POSTCARD_IMAGES: Record<string, string> = {
 /** Sends just before the 300ms mail animation ends. */
 const MAILING_MS = 260;
 
+/** Two openers that lead to dates and offers; the feature questions (a jacuzzi, pets) are
+ *  answered on the cabin cards below rather than asked up front. */
 function starters(lang: Lang, light: boolean): Starter[] {
   return [
     { icon: "calendar", prompt: t(lang, "starterWeekend") },
-    { icon: "plane", prompt: t(lang, "starterJacuzzi") },
-    { icon: "return", prompt: t(lang, "starterPets") },
     // Light mode has no stays to look up, so it offers the packages instead.
     { icon: "pin", prompt: t(lang, light ? "starterPackages" : "starterBooking") },
   ];
