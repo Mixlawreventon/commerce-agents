@@ -30,6 +30,7 @@ const SECTIONS: { component: string; id?: string; payload: unknown; status?: UIS
   },
   { component: "comparison", payload: SHOWCASE.comparison },
   { component: "products", payload: SHOWCASE.products },
+  { component: "calendar", payload: SHOWCASE.calendar },
   { component: "checkout", payload: SHOWCASE.checkout },
   { component: "order_status", payload: SHOWCASE.order_status },
 ];

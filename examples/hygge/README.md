@@ -91,6 +91,12 @@ real deployment puts its own auth in front.
   calendar), the five cabins with their lowest rate, and the offers on (idobooking's
   promotions and the announceable codes). `storefront-web/components/StayOpenings.tsx`
   renders it; a tile's click is a ready question to the assistant.
+- `api/calendar.py`: `present_calendar`, the availability calendar as a card. The host
+  fills every night in from the booking system's calendar (`/api/calendar-pricing`): one
+  cabin's free nights and prices, or the whole property's free cabins per night and
+  lowest price; without live data, the fixtures' availability window. A day on the card
+  asks about a stay starting that night. `storefront-web/components/generative/
+  AvailabilityCalendar.tsx` renders it.
 - `api/agent_config.py`: the shopping config (brand, warm Scandinavian voice, PLN, and a
   real model id via `SHOPPING_MODEL`) and the merchant config, including the pricing
   ladder (full price, then a package or announceable code, then a quiet code only after a

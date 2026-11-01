@@ -63,7 +63,19 @@ type Key =
   | "promoTitle"
   | "promoCopy"
   | "promoCopied"
-  | "promoHint";
+  | "promoHint"
+  | "calendarTitle"
+  | "calendarCabin"
+  | "calendarProperty"
+  | "calendarSubtitle"
+  | "calendarFree"
+  | "calendarBooked"
+  | "calendarPast"
+  | "calendarPricePerNight"
+  | "calendarDots"
+  | "calendarClickHint"
+  | "calendarDayPrompt"
+  | "calendarDayPromptCabin";
 
 const DICT: Record<Lang, Record<Key, string>> = {
   pl: {
@@ -115,6 +127,18 @@ const DICT: Record<Lang, Record<Key, string>> = {
     promoCopy: "Kopiuj",
     promoCopied: "Skopiowano",
     promoHint: "Wklej kod w polu kodu rabatowego w formularzu rezerwacji.",
+    calendarTitle: "Wolne terminy",
+    calendarCabin: "Kalendarz · domek {name}",
+    calendarProperty: "Kalendarz · wszystkie domki",
+    calendarSubtitle: "{nights} wolnych nocy w pokazanych miesiącach, ceny za noc dla {guests} os.",
+    calendarFree: "wolne",
+    calendarBooked: "zajęte",
+    calendarPast: "minęło",
+    calendarPricePerNight: "cena za noc w zł",
+    calendarDots: "kropki: ile domków wolnych",
+    calendarClickHint: "Kliknij dzień, żeby zapytać o pobyt od tej nocy.",
+    calendarDayPrompt: "Szukam domku od {date} na 2 noce dla {guests} osób. Co jest wolne, w jakiej cenie i z jakimi promocjami?",
+    calendarDayPromptCabin: "Chcę domek {name} od {date} na 2 noce dla {guests} osób. Jaka cena i jakie promocje?",
   },
   en: {
     viewAssistant: "Assistant",
@@ -165,6 +189,18 @@ const DICT: Record<Lang, Record<Key, string>> = {
     promoCopy: "Copy",
     promoCopied: "Copied",
     promoHint: "Paste the code into the discount code field of the booking form.",
+    calendarTitle: "Free dates",
+    calendarCabin: "Calendar · {name} cabin",
+    calendarProperty: "Calendar · all cabins",
+    calendarSubtitle: "{nights} free nights in the months shown, prices per night for {guests}.",
+    calendarFree: "free",
+    calendarBooked: "booked",
+    calendarPast: "past",
+    calendarPricePerNight: "price per night in PLN",
+    calendarDots: "dots: cabins free",
+    calendarClickHint: "Click a day to ask about a stay from that night.",
+    calendarDayPrompt: "I'm looking for a cabin from {date} for 2 nights for {guests}. What's free, at what price and with which offers?",
+    calendarDayPromptCabin: "I'd like the {name} cabin from {date} for 2 nights for {guests}. What's the price and which offers apply?",
   },
   de: {
     viewAssistant: "Assistent",
@@ -215,6 +251,18 @@ const DICT: Record<Lang, Record<Key, string>> = {
     promoCopy: "Kopieren",
     promoCopied: "Kopiert",
     promoHint: "Füge den Code im Feld für den Rabattcode des Buchungsformulars ein.",
+    calendarTitle: "Freie Termine",
+    calendarCabin: "Kalender · Häuschen {name}",
+    calendarProperty: "Kalender · alle Häuschen",
+    calendarSubtitle: "{nights} freie Nächte in den gezeigten Monaten, Preise pro Nacht für {guests} Pers.",
+    calendarFree: "frei",
+    calendarBooked: "belegt",
+    calendarPast: "vergangen",
+    calendarPricePerNight: "Preis pro Nacht in PLN",
+    calendarDots: "Punkte: freie Häuschen",
+    calendarClickHint: "Klicke einen Tag, um nach einem Aufenthalt ab dieser Nacht zu fragen.",
+    calendarDayPrompt: "Ich suche ein Häuschen ab {date} für 2 Nächte für {guests} Personen. Was ist frei, zu welchem Preis und mit welchen Angeboten?",
+    calendarDayPromptCabin: "Ich möchte das Häuschen {name} ab {date} für 2 Nächte für {guests} Personen. Welcher Preis und welche Angebote?",
   },
 };
 
