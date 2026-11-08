@@ -45,6 +45,7 @@ type Key =
   | "feedbackThanks"
   | "privacyNote"
   | "bookAt"
+  | "otherDatesAt"
   | "openingsTitle"
   | "openingsWeekend"
   | "openingsMidweek"
@@ -108,6 +109,7 @@ const DICT: Record<Lang, Record<Key, string>> = {
     feedbackThanks: "Dziękujemy — przekazaliśmy to dalej.",
     privacyNote: "Rozmowy z asystentem zapisujemy, żeby go ulepszać. Nie podawaj danych karty ani hasła.",
     bookAt: "Rezerwuj w idobooking",
+    otherDatesAt: "Inne terminy w idobooking",
     openingsTitle: "Najbliższe wolne terminy",
     openingsWeekend: "Weekend",
     openingsMidweek: "W tygodniu",
@@ -170,6 +172,7 @@ const DICT: Record<Lang, Record<Key, string>> = {
     feedbackThanks: "Thank you — we've passed this on.",
     privacyNote: "We keep these conversations to improve the assistant. Please don't share card details or passwords.",
     bookAt: "Book on idobooking",
+    otherDatesAt: "Other dates on idobooking",
     openingsTitle: "Nearest open dates",
     openingsWeekend: "Weekend",
     openingsMidweek: "Midweek",
@@ -232,6 +235,7 @@ const DICT: Record<Lang, Record<Key, string>> = {
     feedbackThanks: "Danke — wir geben das weiter.",
     privacyNote: "Wir speichern diese Gespräche, um den Assistenten zu verbessern. Bitte keine Kartendaten oder Passwörter.",
     bookAt: "Auf idobooking buchen",
+    otherDatesAt: "Andere Termine auf idobooking",
     openingsTitle: "Nächste freie Termine",
     openingsWeekend: "Wochenende",
     openingsMidweek: "Unter der Woche",

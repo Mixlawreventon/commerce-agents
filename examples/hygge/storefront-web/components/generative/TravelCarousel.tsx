@@ -4,7 +4,7 @@
 "use client";
 
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
-import { formatPrice, productCity, productPlace, productPriceUnit } from "@/lib/format";
+import { formatPrice, productCity, productPlace, productPriceUnit, shortDate } from "@/lib/format";
 import type { Product, ProductsPayload } from "@/lib/types";
 import { api } from "@/lib/api";
 import { DEFAULT_LANG, t as tr } from "@/lib/i18n";
@@ -98,16 +98,8 @@ function hasFreeCancellation(product: Product): boolean {
   );
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-/** From the string parts, so no timezone shifts the day. */
 function cancellationDeadline(product: Product): string | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(
-    product.attributes?.free_cancellation_until ?? "",
-  );
-  if (!match) return null;
-  const month = MONTHS[Number(match[2]) - 1];
-  return month ? `${month} ${Number(match[3])}` : null;
+  return shortDate(product.attributes?.free_cancellation_until);
 }
 
 /** The named idobooking package the quoted rate comes from, when one beat the season rate. */
@@ -301,19 +293,23 @@ export function TravelCard({
       ) : null}
       <div className="mt-auto flex flex-wrap items-end justify-between gap-x-2 gap-y-0.5 pt-1">
         <Stars rating={product.rating} count={product.review_count} />
-        <span className="ml-auto whitespace-nowrap text-right">
-          {promo ? (
-            <span
-              style={{ ...META, fontSize: 12, marginRight: 4, textDecoration: "line-through" }}
-            >
-              {formatPrice(promo.rateBefore)}
+        {/* The unit sits under the figure: on a narrow card beside it, it was cut mid-word. */}
+        <span className="ml-auto flex flex-col items-end text-right">
+          <span className="whitespace-nowrap">
+            {promo ? (
+              <span
+                style={{ ...META, fontSize: 12, marginRight: 4, textDecoration: "line-through" }}
+              >
+                {formatPrice(promo.rateBefore)}
+              </span>
+            ) : null}
+            {soldOut ? <span style={{ ...META, fontSize: 11, marginRight: 3 }}>od</span> : null}
+            <span style={{ fontFamily: DISPLAY, fontSize: 18, fontWeight: 700, color: "var(--accent)" }}>
+              {formatPrice(product.price)}
             </span>
-          ) : null}
-          <span style={{ fontFamily: DISPLAY, fontSize: 18, fontWeight: 700, color: "var(--accent)" }}>
-            {formatPrice(product.price)}
           </span>
           {unit ? (
-            <span style={{ ...META, fontSize: 11, marginLeft: 3 }}>
+            <span style={{ ...META, fontSize: 10.5 }}>
               {unit} · z opłatami
             </span>
           ) : null}
@@ -329,13 +325,22 @@ export function TravelCard({
             void api.post("/click", { target: "booking", product_id: product.product_id });
           }}
           className="mt-1 rounded-full px-3 py-1.5 text-center text-[12px] font-semibold"
-          style={{ background: "var(--accent)", color: "var(--surface)" }}
+          style={
+            soldOut
+              ? { border: "1px solid var(--line-strong)", color: "var(--ink)", background: "var(--surface)" }
+              : { background: "var(--accent)", color: "var(--surface)" }
+          }
         >
-          {tr(DEFAULT_LANG, "bookAt")} →
+          {/* Taken for these dates: the link opens the cabin's own calendar, not a booking of them. */}
+          {tr(DEFAULT_LANG, soldOut ? "otherDatesAt" : "bookAt")} →
         </a>
       ) : null}
-      <RateGauge price={product.price} band={product.attributes?.typical_rate_band} />
-      <DateFlexStrip raw={product.attributes?.date_flex} />
+      {soldOut ? null : (
+        <>
+          <RateGauge price={product.price} band={product.attributes?.typical_rate_band} />
+          <DateFlexStrip raw={product.attributes?.date_flex} />
+        </>
+      )}
       {reason ? (
         <p
           style={{

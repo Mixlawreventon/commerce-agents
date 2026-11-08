@@ -61,14 +61,23 @@ export function formatPrice(value: number): string {
   return formatMoney(value, "PLN", { whole: Number.isInteger(value) });
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-/** "2026-10-13" → "Oct 13", from the string parts so no timezone shifts the day. */
+/** "2026-10-13" → "13 paź", from the string parts so no timezone shifts the day. */
 export function shortDate(iso?: string): string | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso ?? "");
   if (!match) return null;
-  const month = MONTHS[Number(match[2]) - 1];
-  return month ? `${month} ${Number(match[3])}` : null;
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  return new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "short", timeZone: "UTC" }).format(date).replace(".", "");
+}
+
+// Two letters each, so a seven-cell strip fits a phone-width card ("niedz" did not).
+const WEEKDAYS_PL = ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "So"];
+
+/** "2026-10-13" → "Wt" — the weekday's two-letter Polish name, timezone-stable. */
+export function shortWeekday(iso: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!match) return "";
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  return WEEKDAYS_PL[date.getUTCDay()];
 }
 
 function quantityNoun(productId: string): "nights" | "guests" | "travelers" | null {
