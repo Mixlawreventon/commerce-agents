@@ -279,6 +279,33 @@ export const SHOWCASE = {
     ],
   },
 
+  // One month of the property's calendar, as present_calendar fills it in.
+  calendar: {
+    title: "Wolne terminy w listopadzie",
+    guests: 2,
+    cabin: null,
+    months: [
+      {
+        month: "2026-11",
+        days: Array.from({ length: 30 }, (_, i) => {
+          const day = i + 1;
+          const weekday = ((6 + i) % 7) + 1; // 1 Nov 2026 is a Sunday
+          const past = day < 10;
+          const booked = [13, 14, 20, 21].includes(day);
+          const free = !past && !booked;
+          return {
+            iso: `2026-11-${String(day).padStart(2, "0")}`,
+            day,
+            weekday,
+            past,
+            available: free,
+            price: free ? (weekday >= 5 ? 549 : 449) : null,
+            cabins_free: past ? 0 : booked ? 0 : weekday >= 5 ? 2 : 5,
+          };
+        }),
+      },
+    ],
+  },
   checkout: {
     note: "Three nights at ACME Guesthouses, a Sintra day, and a fado evening for two — confirmation lands by email within a minute of booking.",
     fulfillment_method: "delivery" as const,

@@ -156,3 +156,30 @@ export interface HomeOverview {
   offers: HomeOffer[];
   generated_for: string;
 }
+
+// --- present_calendar: the availability calendar, filled in from the booking system ---
+
+export interface CalendarDay {
+  iso: string;
+  day: number;
+  /** ISO weekday, Monday 1 .. Sunday 7. */
+  weekday: number;
+  past: boolean;
+  available: boolean;
+  price?: number | null;
+  /** Whole-property view only: how many cabins are free that night. */
+  cabins_free?: number;
+}
+
+export interface CalendarMonth {
+  /** "2026-11" */
+  month: string;
+  days: CalendarDay[];
+}
+
+export interface CalendarPayload {
+  title?: string;
+  cabin?: { product_id: string; name: string } | null;
+  guests?: number;
+  months: CalendarMonth[];
+}

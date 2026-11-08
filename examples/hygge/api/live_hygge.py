@@ -71,6 +71,20 @@ def _tagged(url: str) -> str:
 # A dated search only knows the arrival; quote this many nights to check availability/price.
 _DEFAULT_QUOTE_NIGHTS = 2
 
+# What the static backend stamps on a dated result from its fixtures: a rate strip around
+# the date, a cancellation cutoff from the fixture policy, a room count from the fixture
+# occupancy. Live cards carry idobooking's figures or none, so these come off; the same
+# goes for the catalog's hand-written rate band, which the live price would be judged by.
+_FIXTURE_QUOTE_KEYS = ("date_flex", "free_cancellation_until", "units_left_for_dates")
+_FIXTURE_CATALOG_KEYS = ("typical_rate_band",)
+
+
+def _strip_fixture_quote(products: list[Product]) -> list[Product]:
+    for product in products:
+        for key in _FIXTURE_QUOTE_KEYS:
+            product.attributes.pop(key, None)
+    return products
+
 
 def _read_offers(offers: list[dict], nights: int) -> dict[str, Any]:
     """The cheapest nightly rate per rate type, and the named package the best price uses.
@@ -279,6 +293,8 @@ class HyggeLive(MockTravel):
             if product is not None:
                 product.attributes["cabin_id"] = str(cabin_id)
                 product.attributes["booking_url"] = _tagged(_WIDGET_URL.format(id=cabin_id))
+                for key in _FIXTURE_CATALOG_KEYS:
+                    product.attributes.pop(key, None)
         data = self._get("/api/cabins")
         if not data:
             logger.warning(
@@ -506,8 +522,10 @@ class HyggeLive(MockTravel):
             },
         )
         if avail is None:
-            # Middleware down: fall back to the static dated search.
-            return await super().search_products(session, query, filters, limit)
+            # Middleware down: fall back to the static dated search, less its fixture figures.
+            return _strip_fixture_quote(
+                await super().search_products(session, query, filters, limit)
+            )
 
         nights = max((departure - travel_date).days, 1)
         # Map available cabins to their catalog products, live nightly price, and the
@@ -536,7 +554,9 @@ class HyggeLive(MockTravel):
             # week, the assistant answered that the property may not have one. Show what
             # matches, marked as taken, so the answer is "booked then" and the card wears
             # its sold-out band.
-            taken = await super().search_products(session, query, filters, limit)
+            taken = _strip_fixture_quote(
+                await super().search_products(session, query, filters, limit)
+            )
             for product in taken:
                 product.in_stock = False
                 product.attributes["quoted_for"] = (

@@ -17,6 +17,7 @@ from shopping_agent_runtime import ShoppingAgent
 
 from .agent_config import build_shopping_config
 from .booking import create_booking_router
+from .calendar import build_calendar_extension
 from .discount_codes import OfferDesk, build_store
 from .home import create_home_router
 from .itinerary import build_itinerary_extension
@@ -38,7 +39,7 @@ agent = ShoppingAgent(
     skills_dir=REPO_ROOT / "shopping-agent" / "skills",
     config=build_shopping_config(),
     memory_store=InMemoryMemoryStore(),
-    extra_presentation_tools=[build_itinerary_extension()],
+    extra_presentation_tools=[build_itinerary_extension(), build_calendar_extension(backend)],
     extra_tools=[ELIGIBLE_OFFERS_TOOL],
     executor_class=HyggeToolExecutor,
 )

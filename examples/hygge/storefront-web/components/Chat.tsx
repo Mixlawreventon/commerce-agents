@@ -9,7 +9,7 @@ import type { Lang } from "@/lib/i18n";
 import GenerativeBlock from "./generative";
 import ReplyFeedback from "./ReplyFeedback";
 
-const WIDE = new Set(["comparison", "itinerary"]);
+const WIDE = new Set(["comparison", "itinerary", "calendar"]);
 
 export default function Chat({ chat, home, lang, fullWidth = false }: { chat: AgentTurn; home: ReactNode; lang: Lang; fullWidth?: boolean }) {
   return (

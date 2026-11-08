@@ -5,6 +5,7 @@
 
 import { type GenerativeBlockProps, UnknownBlock } from "web-shared";
 import type {
+  CalendarPayload,
   CheckoutPayload,
   ComparisonPayload,
   GuidePayload,
@@ -13,6 +14,7 @@ import type {
   PlanPayload,
   ProductsPayload,
 } from "@/lib/types";
+import AvailabilityCalendar from "./AvailabilityCalendar";
 import BoardingPass from "./BoardingPass";
 import BookingStatusCard from "./BookingStatusCard";
 import ComparisonSpread from "./ComparisonSpread";
@@ -54,6 +56,9 @@ export default function GenerativeBlock({ block, status }: GenerativeBlockProps)
     case "checkout":
       if (partial) return null;
       return <BoardingPass payload={payload as CheckoutPayload} />;
+    case "calendar":
+      if (partial) return null;
+      return <AvailabilityCalendar payload={payload as CalendarPayload} />;
     case "itinerary":
       // The extension streams partial frames too, so days assemble one by one.
       return (

@@ -4,7 +4,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { formatPrice, productPlace, productPriceUnit } from "@/lib/format";
+import { formatPrice, productPlace, productPriceUnit, shortWeekday } from "@/lib/format";
 import type { Product } from "@/lib/types";
 import { PostcardWindow } from "../PostcardWindow";
 
@@ -45,8 +45,6 @@ export const HOVER_LIFT =
 
 // --- Date-aware stay signals (attributes stamped by examples/travel/api) ---
 
-const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
 export interface DateFlexCell {
   iso: string;
   day: number;
@@ -63,11 +61,10 @@ function parseDateFlex(raw?: string): DateFlexCell[] | null {
     const match = /^(\d{4})-(\d{2})-(\d{2})(\*?):(\d+)$/.exec(cell);
     if (!match) return null;
     const [, year, month, day, chosen, rate] = match;
-    const utc = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
     cells.push({
       iso: `${year}-${month}-${day}`,
       day: Number(day),
-      weekday: WEEKDAYS[utc.getUTCDay()],
+      weekday: shortWeekday(`${year}-${month}-${day}`),
       rate: Number(rate),
       chosen: chosen === "*",
     });
@@ -90,7 +87,7 @@ export function DateFlexStrip({ raw }: { raw?: string }) {
           return (
             <span
               key={cell.iso}
-              title={`${cell.weekday}: $${cell.rate}/night`}
+              title={`${cell.weekday} ${cell.day}: ${formatPrice(cell.rate)} za noc`}
               className="flex min-w-0 flex-1 flex-col items-center rounded-md py-1"
               style={{
                 fontFamily: BODY,
@@ -99,8 +96,8 @@ export function DateFlexStrip({ raw }: { raw?: string }) {
               }}
             >
               <span style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-soft)" }}>
-                {cell.weekday[0]}
-                <span style={{ fontWeight: 400 }}>{cell.day}</span>
+                {cell.weekday}
+                <span style={{ fontWeight: 400 }}> {cell.day}</span>
               </span>
               <span
                 style={{
@@ -109,7 +106,7 @@ export function DateFlexStrip({ raw }: { raw?: string }) {
                   color: tinted ? "var(--accent)" : "var(--ink)",
                 }}
               >
-                ${cell.rate}
+                {cell.rate}
               </span>
             </span>
           );
@@ -117,7 +114,7 @@ export function DateFlexStrip({ raw }: { raw?: string }) {
       </div>
       {savings >= 15 && bestCell ? (
         <p className="mt-1" style={{ fontFamily: BODY, fontSize: 11, fontWeight: 600, color: "var(--accent)" }}>
-          Save ${savings} by arriving {bestCell.weekday}
+          Przyjazd {bestCell.weekday} {bestCell.day}: taniej o {formatPrice(savings)}
         </p>
       ) : null}
     </div>
@@ -203,7 +200,7 @@ export function ScarcityChip({ unitsLeft }: { unitsLeft?: string }) {
         background: "var(--surface)",
       }}
     >
-      {count} left for your dates
+      {count === 1 ? "został 1 na te daty" : `zostały ${count} na te daty`}
     </span>
   );
 }
